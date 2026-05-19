@@ -268,6 +268,8 @@ async function handleUserCommand(cmd: string) {
   overflow: hidden;
   margin: 0;
   padding: 0;
+  width: 100%;
+  display: flex;
 }
 
 .sidebar {
@@ -275,8 +277,12 @@ async function handleUserCommand(cmd: string) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  margin-left: 0;
-  padding-left: 0;
+  margin: 0;
+  padding: 0;
+  width: 180px;
+  flex-shrink: 0;
+  position: relative;
+  left: 0;
 }
 
 :deep(.el-aside) {
@@ -383,7 +389,8 @@ async function handleUserCommand(cmd: string) {
 
 .app-main {
   background: #f5f7fa;
-  padding: 16px;
+  padding: 0;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 </style>

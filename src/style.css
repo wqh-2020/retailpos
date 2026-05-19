@@ -50,30 +50,67 @@
   }
 }
 
-html, body, #app {
+/* ─── 根容器：消除所有外边距和滚动条 ─── */
+html {
   margin: 0;
   padding: 0;
   height: 100%;
-  width: 100%;
+  overflow: hidden;
 }
 
 body {
-  overflow: hidden;
+  display: block;
+  margin: 0;
+  height: 100%;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
   background: #f5f7fa;
 }
 
+#app {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100%;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  box-sizing: border-box;
+}
+
+/* ─── Element Plus 容器组件：消除边距 ─── */
 .el-container {
   margin: 0 !important;
   padding: 0 !important;
+  border: none !important;
 }
 
 .el-aside {
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
+  border-left: none !important;
+  border-right: none !important;
   box-shadow: none !important;
+  overflow: visible !important;
 }
 
+.el-main {
+  padding: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+.el-header {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.el-menu {
+  padding-left: 0 !important;
+}
+
+/* ─── 标题 ─── */
 h1,
 h2 {
   font-family: var(--heading);
@@ -174,13 +211,6 @@ code {
     transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
       scale(0.8);
   }
-}
-
-#app {
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-  box-sizing: border-box;
 }
 
 #center {
