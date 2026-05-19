@@ -8,23 +8,9 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
 let mainWindow = null
 
-// ─── 精简菜单：仅标题，无 File/Edit/View ────────────────
+// ─── 去掉菜单栏 ──────────────────────────────────────────
 function buildMenu() {
-  const template = [
-    {
-      label: '聚财收银系统',
-      submenu: isDev ? [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { type: 'separator' },
-        { role: 'toggleDevTools', visible: false },
-      ] : [
-        { label: '关于聚财收银系统', role: 'about' },
-      ],
-    },
-  ]
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
+  Menu.setApplicationMenu(null)
 }
 
 function createWindow() {
@@ -35,7 +21,7 @@ function createWindow() {
     minHeight: 680,
     title: '聚财收银系统',
     backgroundColor: '#f5f7fa',
-    autoHideMenuBar: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -45,8 +31,6 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173')
-    // 仅在 dev 模式下可手动打开 devtools（隐藏菜单入口）
-    mainWindow.webContents.on('devtoolsopened', () => {})
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
