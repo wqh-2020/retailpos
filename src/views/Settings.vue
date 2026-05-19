@@ -3,7 +3,19 @@
     <el-tabs v-model="activeTab" type="border-card">
       <!-- ── 店铺信息 ── -->
       <el-tab-pane label="店铺信息" name="shop">
-        <el-form :model="shopForm" label-width="90px" style="max-width: 480px">
+        <el-form :model="shopForm" label-width="90px" style="max-width: 600px">
+          <el-form-item label="店铺Logo">
+            <div class="logo-upload-row">
+              <el-avatar v-if="shopForm.logo" :src="shopForm.logo" :size="64" shape="square" />
+              <el-avatar v-else :size="64" shape="square"><el-icon :size="32"><Shop /></el-icon></el-avatar>
+              <div class="logo-upload-btns">
+                <el-button size="small" @click="logoInputRef?.click()">上传Logo</el-button>
+                <el-button v-if="shopForm.logo" size="small" type="danger" @click="removeLogo">删除</el-button>
+                <input ref="logoInputRef" type="file" accept="image/*" style="display:none" @change="handleLogoUpload" />
+              </div>
+              <span class="form-tip">建议尺寸 200×200，支持 PNG/JPG，建议白色或透明背景</span>
+            </div>
+          </el-form-item>
           <el-form-item label="店铺名称">
             <el-input v-model="shopForm.name" placeholder="例：我的便利店" />
           </el-form-item>
@@ -159,7 +171,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Download, Upload, Plus } from '@element-plus/icons-vue'
+import { Download, Upload, Plus, Shop } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
 import { db } from '@/db'
 import { getOperators, addOperator, updateOperator, deleteOperator } from '@/db/reports'
@@ -172,7 +184,8 @@ const backingUp = ref(false)
 const restoring = ref(false)
 
 // ── 店铺信息表单 ──
-const shopForm = ref({ name: '', phone: '', address: '', footer: '' })
+const shopForm = ref({ name: '', phone: '', address: '', footer: '', logo: '' })
+const logoInputRef = ref<HTMLInputElement | null>(null)
 
 // ── 小票配置 ──
 const receiptForm = ref({ paperWidth: '80', showBarcode: true, footer: '' })
@@ -193,6 +206,7 @@ onMounted(async () => {
     phone: settings.shopPhone,
     address: settings.shopAddress,
     footer: settings.receiptFooter,
+    logo: settings.shopLogo,
   }
   receiptForm.value = {
     paperWidth: settings.receiptPaperWidth || '80',
@@ -210,11 +224,33 @@ async function saveShopInfo() {
     await settings.saveSetting('shop.name', shopForm.value.name)
     await settings.saveSetting('shop.phone', shopForm.value.phone)
     await settings.saveSetting('shop.address', shopForm.value.address)
+    await settings.saveSetting('shop.logo', shopForm.value.logo)
     await settings.saveSetting('receipt.footer', shopForm.value.footer)
     ElMessage.success('保存成功')
   } finally {
     saving.value = false
   }
+}
+
+// 上传 Logo（转为 Data URL 存储）
+function handleLogoUpload(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.warning('图片大小不能超过 2MB')
+    return
+  }
+  const reader = new FileReader()
+  reader.onload = (ev) => {
+    shopForm.value.logo = ev.target?.result as string
+  }
+  reader.readAsDataURL(file)
+  // 清空 input，允许重复选择同一文件
+  ;(e.target as HTMLInputElement).value = ''
+}
+
+function removeLogo() {
+  shopForm.value.logo = ''
 }
 
 // 保存小票配置
@@ -360,4 +396,6 @@ async function doRestore() {
 .page-settings { max-width: 760px; }
 .tab-tip { font-size: 12px; color: #909399; }
 .form-tip { font-size: 12px; color: #909399; margin-left: 8px; }
+.logo-upload-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.logo-upload-btns { display: flex; gap: 8px; }
 </style>

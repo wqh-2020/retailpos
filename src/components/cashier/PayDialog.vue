@@ -105,7 +105,7 @@ const emit = defineEmits<{
 
 const settings = useSettingsStore()
 const paying = ref(false)
-const selectedMethods = ref<PaymentMethodCode[]>(['cash'])
+const selectedMethods = ref<PaymentMethodCode[]>(['wechat'])
 const payAmounts = ref<Record<string, number>>({ cash: 0, wechat: 0, alipay: 0, bankcard: 0, other: 0 })
 
 const enabledMethods = computed(() => settings.enabledPaymentMethods)
@@ -150,10 +150,10 @@ function onAmountChange() {
 // 重置
 watch(() => props.modelValue, (v) => {
   if (v) {
-    selectedMethods.value = ['cash']
+    selectedMethods.value = ['wechat']
     Object.keys(payAmounts.value).forEach((k) => (payAmounts.value[k] = 0))
-    // 默认现金填满
-    payAmounts.value.cash = Math.ceil(props.total / 100)
+    // 默认微信填满
+    payAmounts.value.wechat = Math.ceil(props.total / 100)
   }
 })
 

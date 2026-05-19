@@ -7,6 +7,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const shopName = ref('我的门店')
   const shopPhone = ref('')
   const shopAddress = ref('')
+  const shopLogo = ref('')       // data URL 存储
   const receiptFooter = ref('谢谢惠顾，欢迎再来！')
   const receiptShowBarcode = ref(true)
   const receiptPaperWidth = ref('80')
@@ -21,6 +22,7 @@ export const useSettingsStore = defineStore('settings', () => {
     shopName.value = map['shop.name'] ?? '我的门店'
     shopPhone.value = map['shop.phone'] ?? ''
     shopAddress.value = map['shop.address'] ?? ''
+    shopLogo.value = map['shop.logo'] ?? ''
     receiptFooter.value = map['receipt.footer'] ?? '谢谢惠顾，欢迎再来！'
     receiptShowBarcode.value = map['receipt.showBarcode'] !== 'false'
     receiptPaperWidth.value = map['receipt.paperWidth'] ?? '80'
@@ -37,7 +39,7 @@ export const useSettingsStore = defineStore('settings', () => {
   )
 
   return {
-    shopName, shopPhone, shopAddress,
+    shopName, shopPhone, shopAddress, shopLogo,
     receiptFooter, receiptShowBarcode, receiptPaperWidth,
     paymentMethods, enabledPaymentMethods,
     load, saveSetting,

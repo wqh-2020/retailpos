@@ -198,7 +198,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Product, Category, Order, OrderItem, Payment } from '@/types'
 import { useCartStore } from '@/stores/cart'
 import { searchProducts } from '@/db/products'
@@ -274,6 +274,19 @@ async function onPaid(payload: {
   lastOrder.value = payload
   showPayDialog.value = false
   cartStore.clearCart()
+
+  // 询问是否打印小票
+  try {
+    await ElMessageBox.confirm('收款成功！是否打印小票？', '打印小票', {
+      confirmButtonText: '打印',
+      cancelButtonText: '不打印',
+      type: 'success',
+      distinguishCancelAndClose: true,
+    })
+    receiptRef.value?.print()
+  } catch {
+    // 用户取消，不打印
+  }
 }
 
 // 快捷商品

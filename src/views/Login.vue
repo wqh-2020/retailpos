@@ -2,10 +2,13 @@
   <div class="login-page">
     <div class="login-card">
       <div class="login-header">
-        <div class="login-logo">
+        <div class="login-logo" v-if="shopLogo">
+          <img :src="shopLogo" alt="logo" class="shop-logo-img" />
+        </div>
+        <div v-else class="login-logo">
           <el-icon size="36" color="#409eff"><ShoppingCart /></el-icon>
         </div>
-        <h2 class="login-title">零售收银系统</h2>
+        <h2 class="login-title">{{ shopName || '零售收银系统' }}</h2>
         <p class="login-subtitle">请登录以继续</p>
       </div>
 
@@ -68,18 +71,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import { useSettingsStore } from '@/stores/settings'
 import { ShoppingCart, WarningFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const errorMsg = ref('')
+const shopName = ref('')
+const shopLogo = ref('')
+
+onMounted(async () => {
+  await settingsStore.load()
+  shopName.value = settingsStore.shopName
+  shopLogo.value = settingsStore.shopLogo || ''
+})
 
 const form = reactive({
   username: '',
@@ -144,6 +157,12 @@ async function handleLogin() {
   display: flex;
   justify-content: center;
   margin-bottom: 12px;
+}
+
+.shop-logo-img {
+  max-width: 60px;
+  max-height: 60px;
+  object-fit: contain;
 }
 
 .login-title {
