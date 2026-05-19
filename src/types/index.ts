@@ -59,12 +59,92 @@ export interface Payment {
   createdAt: number
 }
 
+// ─── 系统用户 ─────────────────────────────────────────────
+export interface User {
+  id?: number
+  username: string       // 登录账号
+  passwordHash: string    // bcrypt 哈希
+  realname: string        // 姓名
+  roleCode: string        // 角色编码
+  phone?: string
+  email?: string
+  isActive: boolean
+  lastLoginAt?: number    // 时间戳
+  createdAt: number
+  updatedAt: number
+}
+
+export interface Role {
+  id?: number
+  code: string            // 唯一编码：admin/regular_admin/cashier/waiter
+  name: string            // 显示名称
+  description?: string
+  permissions: string[]   // 权限码数组
+  sortOrder: number       // 排序
+  canDelete: boolean      // 系统内置角色不可删除
+  createdAt: number
+  updatedAt: number
+}
+
+export interface LoginLog {
+  id?: number
+  userId?: number
+  username: string
+  success: boolean
+  failReason?: string
+  ip?: string
+  userAgent?: string
+  createdAt: number
+}
+
+export interface OperationLog {
+  id?: number
+  userId: number
+  username: string
+  action: string          // 操作动作
+  targetType?: string     // 目标类型：User/Role/Product/Order 等
+  targetId?: number
+  detail?: string         // 详细描述
+  createdAt: number
+}
+
+// ─── 原有 Operator（保留兼容）────────────────────────────
 export interface Operator {
   id?: number
   name: string
   pin: string          // SHA-256 哈希
   isActive: boolean
   createdAt: number
+}
+
+// ─── 权限码定义 ─────────────────────────────────────────
+export type PermissionCode =
+  // 收银
+  | 'cashier.sale' | 'cashier.refund' | 'cashier.void'
+  // 商品
+  | 'product.view' | 'product.create' | 'product.edit' | 'product.delete'
+  | 'product.import' | 'product.export'
+  // 订单
+  | 'order.view' | 'order.refund' | 'order.void'
+  // 报表
+  | 'stats.view' | 'stats.export'
+  // 会员
+  | 'member.view' | 'member.create' | 'member.edit' | 'member.delete'
+  | 'member.points'
+  // 库存
+  | 'stock.view' | 'stock.adjust'
+  // 促销
+  | 'promotion.view' | 'promotion.create' | 'promotion.edit' | 'promotion.delete'
+  // 系统
+  | 'user.view' | 'user.create' | 'user.edit' | 'user.delete' | 'user.reset_pwd' | 'user.profile'
+  | 'role.view' | 'role.create' | 'role.edit' | 'role.delete'
+  | 'oplog.view' | 'oplog.export'
+  | 'settings.manage' | 'backup.manage'
+
+export interface Permission {
+  code: PermissionCode
+  name: string
+  category: 'cashier' | 'product' | 'order' | 'stats' | 'member' | 'stock' | 'promotion' | 'system'
 }
 
 export interface Setting {
