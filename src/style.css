@@ -52,15 +52,16 @@
 
 /* ─── 根容器：消除所有外边距和滚动条 ─── */
 html {
-  margin: 0;
-  padding: 0;
+  margin: 0 !important;
+  padding: 0 !important;
   height: 100%;
-  overflow: hidden;
+  overflow: hidden !important;
 }
 
 body {
   display: block;
-  margin: 0;
+  margin: 0 !important;
+  padding: 0 !important;
   height: 100%;
   overflow-x: hidden !important;
   overflow-y: hidden !important;
