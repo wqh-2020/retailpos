@@ -188,6 +188,7 @@ const isEdit = ref(false)
 const saving = ref(false)
 const formRef = ref()
 const form = reactive({
+  id: undefined as number | undefined,
   phone: '',
   name: '',
   level: 'bronze' as MemberLevel,
@@ -195,13 +196,14 @@ const form = reactive({
   points: 0,
   remark: '',
   isActive: true,
+  createdAt: undefined as number | undefined,
 })
 const rules = {
   phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
 }
 function resetForm() {
-  Object.assign(form, { phone: '', name: '', level: 'bronze', birthday: '', points: 0, remark: '', isActive: true })
+  Object.assign(form, { id: undefined, phone: '', name: '', level: 'bronze', birthday: '', points: 0, remark: '', isActive: true, createdAt: undefined })
 }
 
 function openAdd() {

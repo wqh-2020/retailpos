@@ -222,7 +222,8 @@ import { ElMessage } from 'element-plus'
 import { getCategories } from '@/db/products'
 import { getStockList, getLowStockProducts, addStockRecord, getStockRecords, updateProductStockSetting } from '@/db/inventory'
 import { getProducts } from '@/db/products'
-import type { Category, Product, StockRecord, StockOpType, StockProduct } from '@/types'
+import type { Category, Product, StockRecord, StockOpType } from '@/types'
+import type { StockProduct } from '@/db/inventory'
 import { formatMoney } from '@/utils/money'
 
 const activeTab = ref('list')

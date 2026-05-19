@@ -18,12 +18,10 @@ module.exports = {
       { target: 'nsis', arch: ['x64'] },
       { target: 'portable', arch: ['x64'] },
     ],
-    icon: 'build/icon.ico',
   },
   nsis: {
     oneClick: false,
     allowToChangeInstallationDirectory: true,
-    installerIcon: 'build/icon.ico',
     shortcutName: '零售收银系统',
     createDesktopShortcut: true,
     createStartMenuShortcut: true,

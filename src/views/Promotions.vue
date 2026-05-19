@@ -35,7 +35,7 @@
       </el-table-column>
       <el-table-column label="适用等级" width="140">
         <template #default="{ row }">
-          {{ row.applicableLevels?.length ? row.applicableLevels.map(l => getLevelLabel(l)).join('/') : '全部会员' }}
+          {{ row.applicableLevels?.length ? row.applicableLevels.map((l: MemberLevel) => getLevelLabel(l)).join('/') : '全部会员' }}
         </template>
       </el-table-column>
       <el-table-column label="状态" width="90">
@@ -178,7 +178,27 @@ const isEdit = ref(false)
 const saving = ref(false)
 const formRef = ref()
 
-function makeFormDefaults(): Partial<Promotion> {
+// 表单类型：startDate/endDate 可以是 Date（el-date-picker）或 number（毫秒）
+interface PromotionFormData {
+  id?: number
+  name: string
+  type: PromotionType
+  thresholdAmount?: number
+  discountAmount?: number
+  discountRate?: number
+  buyProductId?: number
+  buyQuantity?: number
+  giftName?: string
+  lockProductId?: number
+  lockPrice?: number
+  applicableLevels: MemberLevel[]
+  isActive: boolean
+  startDate: Date | number
+  endDate: Date | number
+  createdAt?: number
+}
+
+function makeFormDefaults(): PromotionFormData {
   return {
     name: '',
     type: 'amount_off',
@@ -197,7 +217,7 @@ function makeFormDefaults(): Partial<Promotion> {
   }
 }
 
-const form = reactive(makeFormDefaults())
+const form = reactive<PromotionFormData>(makeFormDefaults())
 const rules = {
   name: [{ required: true, message: '请输入活动名称', trigger: 'blur' }],
   type: [{ required: true }],
@@ -266,14 +286,14 @@ async function handleSave() {
     const data: Omit<Promotion, 'id'> = {
       name: form.name,
       type: form.type,
-      thresholdAmount: form.thresholdAmount !== undefined ? yuanToFen(form.thresholdAmount!) : undefined,
-      discountAmount: form.discountAmount !== undefined ? yuanToFen(form.discountAmount!) : undefined,
+      thresholdAmount: form.thresholdAmount !== undefined ? yuanToFen(form.thresholdAmount) : undefined,
+      discountAmount: form.discountAmount !== undefined ? yuanToFen(form.discountAmount) : undefined,
       discountRate: form.discountRate,
       buyProductId: form.buyProductId,
       buyQuantity: form.buyQuantity,
-      giftName: form.giftName,
+      giftName: form.giftName ?? '',
       lockProductId: form.lockProductId,
-      lockPrice: form.lockPrice !== undefined ? yuanToFen(form.lockPrice!) : undefined,
+      lockPrice: form.lockPrice !== undefined ? yuanToFen(form.lockPrice) : undefined,
       applicableLevels: form.applicableLevels,
       isActive: form.isActive,
       startDate: form.startDate instanceof Date ? form.startDate.getTime() : form.startDate,
