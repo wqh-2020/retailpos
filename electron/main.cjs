@@ -21,7 +21,6 @@ function createWindow() {
     minHeight: 680,
     title: '聚财收银系统',
     backgroundColor: '#f5f7fa',
-    frame: false,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

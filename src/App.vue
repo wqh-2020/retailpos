@@ -266,6 +266,8 @@ async function handleUserCommand(cmd: string) {
 .app-container {
   height: 100vh;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 .sidebar {
@@ -273,6 +275,20 @@ async function handleUserCommand(cmd: string) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+:deep(.el-aside) {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  border-left: none !important;
+  overflow: visible;
+}
+
+:deep(.el-container) {
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .logo {
