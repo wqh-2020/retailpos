@@ -131,7 +131,7 @@
         </div>
         <el-card shadow="never" header="关于" style="max-width: 560px; margin-top: 20px">
           <div style="font-size: 13px; color: #606266; line-height: 2.2">
-            <div>零售收银系统 <strong>v1.0.0</strong></div>
+            <div>聚财收银系统 <strong>v1.0.0</strong></div>
             <div>本地离线版，所有数据存储在设备本地 IndexedDB</div>
             <div style="color: #c0c4cc; font-size: 12px; margin-top: 4px">Vue 3 + Electron + Dexie.js</div>
           </div>

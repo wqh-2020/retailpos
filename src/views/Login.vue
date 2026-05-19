@@ -8,7 +8,7 @@
         <div v-else class="login-logo">
           <el-icon size="36" color="#409eff"><ShoppingCart /></el-icon>
         </div>
-        <h2 class="login-title">{{ shopName || '零售收银系统' }}</h2>
+        <h2 class="login-title">{{ shopName || '聚财收银系统' }}</h2>
         <p class="login-subtitle">请登录以继续</p>
       </div>
 

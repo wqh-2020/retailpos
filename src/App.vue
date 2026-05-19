@@ -6,10 +6,11 @@
   <el-container v-else class="app-container">
     <el-aside width="180px" class="sidebar">
       <div class="logo">
-        <span class="logo-icon">
+        <img v-if="shopLogo" :src="shopLogo" class="logo-img" alt="logo" />
+        <span v-else class="logo-icon">
           <el-icon size="22"><ShoppingCart /></el-icon>
         </span>
-        <span class="logo-text">收银系统</span>
+        <span class="logo-text">{{ shopName || '聚财收银系统' }}</span>
       </div>
       <el-menu
         :default-active="activeRoute"
@@ -133,11 +134,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { formatTime } from '@/utils/orderNo'
 import { useAuthStore } from '@/stores/auth'
+import { useSettingsStore } from '@/stores/settings'
 import {
   ShoppingCart, Goods, List, DataLine, User, Box,
   Discount, Setting,   Key, UserFilled, CaretBottom,
@@ -147,12 +149,18 @@ import {
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 
 const currentTime = ref(formatTime(Date.now()))
 const activeRoute = computed(() => route.path)
-const pageTitle = computed(() => (route.meta?.title as string) ?? '零售收银系统')
+const pageTitle = computed(() => (route.meta?.title as string) ?? '聚财收银系统')
+const shopName = computed(() => settingsStore.shopName)
+const shopLogo = computed(() => settingsStore.shopLogo)
 
 let timer: ReturnType<typeof setInterval>
+onMounted(async () => {
+  await settingsStore.load()
+})
 timer = setInterval(() => {
   currentTime.value = formatTime(Date.now())
 }, 1000)
@@ -280,6 +288,13 @@ async function handleUserCommand(cmd: string) {
 
 .logo-icon {
   color: #409eff;
+}
+
+.logo-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 .sidebar-menu {
