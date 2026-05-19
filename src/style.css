@@ -50,17 +50,28 @@
   }
 }
 
-html {
+html, body, #app {
   margin: 0;
   padding: 0;
   height: 100%;
+  width: 100%;
 }
 
 body {
-  margin: 0;
-  height: 100%;
   overflow: hidden;
   background: #f5f7fa;
+}
+
+.el-container {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.el-aside {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 h1,
