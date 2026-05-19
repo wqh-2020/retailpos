@@ -1,0 +1,27 @@
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import ElementPlus from 'element-plus'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import 'element-plus/dist/index.css'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import router from './router'
+import App from './App.vue'
+import { useSettingsStore } from './stores/settings'
+
+const app = createApp(App)
+const pinia = createPinia()
+
+app.use(pinia)
+app.use(router)
+app.use(ElementPlus, { locale: zhCn })
+
+// 注册所有图标
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component)
+}
+
+// 加载设置
+const settings = useSettingsStore()
+settings.load().then(() => {
+  app.mount('#app')
+})

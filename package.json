@@ -1,0 +1,37 @@
+{
+  "name": "retailpos",
+  "private": true,
+  "version": "1.0.0",
+  "description": "零售收银系统 — 离线桌面版",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "vue-tsc -b && vite build",
+    "dist": "npm run build && electron-builder --win",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@vueuse/core": "^14.3.0",
+    "dexie": "^4.4.2",
+    "echarts": "^6.0.0",
+    "element-plus": "^2.14.0",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.34",
+    "vue-router": "^4.6.4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.3",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "@vue/tsconfig": "^0.9.1",
+    "concurrently": "^9.1.2",
+    "electron": "^29.4.6",
+    "electron-builder": "^25.1.8",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.12",
+    "vue-tsc": "^3.2.8",
+    "wait-on": "^8.0.3"
+  }
+}
