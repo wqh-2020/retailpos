@@ -19,3 +19,24 @@ export function formatMoney(fen: number): string {
 export function applyDiscount(price: number, qty: number, discountRate: number): number {
   return Math.round((price * qty * discountRate) / 100)
 }
+
+// ─── 格式化 ───────────────────────────────────────────────
+
+/** 分 → 元字符串（保留2位） */
+export function formatYuan(fen: number): string {
+  return (fen / 100).toFixed(2)
+}
+
+/** 时间戳 → YYYY-MM-DD HH:mm:ss */
+export function formatDate(ts: number): string {
+  const d = new Date(ts)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+/** 时间戳 → YYYY-MM-DD */
+export function formatDateOnly(ts: number): string {
+  const d = new Date(ts)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}

@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import type { Product, Category, Order, OrderItem, Payment, Operator, Setting } from '@/types'
+import type { Product, Category, Order, OrderItem, Payment, Operator, Setting, Member, MemberPointsLog, Promotion, StockRecord } from '@/types'
 
 class RetailPosDB extends Dexie {
   products!: Table<Product, number>
@@ -9,6 +9,10 @@ class RetailPosDB extends Dexie {
   payments!: Table<Payment, number>
   operators!: Table<Operator, number>
   settings!: Table<Setting, string>
+  members!: Table<Member, number>
+  memberPointsLogs!: Table<MemberPointsLog, number>
+  promotions!: Table<Promotion, number>
+  stockRecords!: Table<StockRecord, number>
 
   constructor() {
     super('retailpos_db')
@@ -20,6 +24,19 @@ class RetailPosDB extends Dexie {
       payments: '++id, orderId, paymentMethod',
       operators: '++id, name',
       settings: '&key',
+    })
+    this.version(2).stores({
+      products: '++id, barcode, name, categoryId, isActive',
+      categories: '++id, name, sortOrder',
+      orders: '++id, &orderNo, status, createdAt, operatorId',
+      orderItems: '++id, orderId, productId',
+      payments: '++id, orderId, paymentMethod',
+      operators: '++id, name',
+      settings: '&key',
+      members: '++id, &phone, name, level, isActive',
+      memberPointsLogs: '++id, memberId, type, createdAt',
+      promotions: '++id, type, isActive, startDate, endDate',
+      stockRecords: '++id, productId, type, createdAt',
     })
   }
 }

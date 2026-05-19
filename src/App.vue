@@ -28,6 +28,18 @@
           <el-icon><DataLine /></el-icon>
           <template #title>报表统计</template>
         </el-menu-item>
+        <el-menu-item index="/members">
+          <el-icon><User /></el-icon>
+          <template #title>会员管理</template>
+        </el-menu-item>
+        <el-menu-item index="/inventory">
+          <el-icon><Box /></el-icon>
+          <template #title>库存管理</template>
+        </el-menu-item>
+        <el-menu-item index="/promotions">
+          <el-icon><Discount /></el-icon>
+          <template #title>促销管理</template>
+        </el-menu-item>
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
           <template #title>系统设置</template>

@@ -37,6 +37,24 @@ const router = createRouter({
       component: () => import('@/views/Settings.vue'),
       meta: { title: '系统设置' },
     },
+    {
+      path: '/members',
+      name: 'Members',
+      component: () => import('@/views/Members.vue'),
+      meta: { title: '会员管理' },
+    },
+    {
+      path: '/inventory',
+      name: 'Inventory',
+      component: () => import('@/views/Inventory.vue'),
+      meta: { title: '库存管理' },
+    },
+    {
+      path: '/promotions',
+      name: 'Promotions',
+      component: () => import('@/views/Promotions.vue'),
+      meta: { title: '促销管理' },
+    },
   ],
 })
 
