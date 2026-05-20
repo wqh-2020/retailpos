@@ -1,14 +1,14 @@
 {
   "name": "retailpos",
   "private": true,
-  "version": "1.0.0",
-  "description": "零售收银系统 — 离线桌面版",
+  "version": "2.0.0",
+  "description": "聚买买零售收银系统 — 离线桌面版",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vue-tsc -b && vite build",
-    "dist": "npm run build && electron-builder --win",
+    "dist": "npm run build && electron-builder --win --config electron-builder.config.cjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -32,7 +32,10 @@
     "concurrently": "^9.2.1",
     "electron": "^29.4.6",
     "electron-builder": "^26.8.1",
+    "fake-indexeddb": "^6.2.5",
     "happy-dom": "^20.9.0",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.5",
     "typescript": "~6.0.2",
     "vite": "^8.0.12",
     "vitest": "^4.1.6",

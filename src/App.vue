@@ -4,16 +4,27 @@
 
   <!-- 已登录主布局 -->
   <el-container v-else class="app-container">
-    <el-aside width="180px" class="sidebar">
+    <el-aside :width="sidebarCollapsed ? '64px' : sidebarWidth + 'px'" class="sidebar">
+      <!-- 拖拽调整宽度手柄 -->
+      <div
+        v-show="!sidebarCollapsed && !isDragging"
+        class="resize-handle"
+        @mousedown="startResize"
+      />
+      <div
+        v-show="!sidebarCollapsed && isDragging"
+        class="resize-handle resize-handle--active"
+      />
       <div class="logo">
         <img v-if="shopLogo" :src="shopLogo" class="logo-img" alt="logo" />
         <span v-else class="logo-icon">
           <el-icon size="22"><ShoppingCart /></el-icon>
         </span>
-        <span class="logo-text">{{ shopName || '聚财收银系统' }}</span>
+        <span v-show="!sidebarCollapsed" class="logo-text">{{ shopName || '聚买买零售收银系统' }}</span>
       </div>
       <el-menu
         :default-active="activeRoute"
+        :collapse="sidebarCollapsed"
         router
         class="sidebar-menu"
       >
@@ -37,15 +48,15 @@
           <el-icon><User /></el-icon>
           <template #title>会员管理</template>
         </el-menu-item>
-        <el-menu-item index="/inventory">
+        <el-menu-item v-if="authStore.hasPerm('stock.view')" index="/inventory">
           <el-icon><Box /></el-icon>
           <template #title>库存管理</template>
         </el-menu-item>
-        <el-menu-item index="/promotions">
+        <el-menu-item v-if="authStore.hasPerm('promotion.view')" index="/promotions">
           <el-icon><Discount /></el-icon>
           <template #title>促销管理</template>
         </el-menu-item>
-        <el-menu-item index="/settings">
+        <el-menu-item v-if="authStore.hasPerm('settings.manage')" index="/settings">
           <el-icon><Setting /></el-icon>
           <template #title>系统设置</template>
         </el-menu-item>
@@ -55,6 +66,12 @@
           <template #title>用户权限</template>
         </el-menu-item>
       </el-menu>
+      <div class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+        <el-icon :size="18">
+          <Fold v-if="!sidebarCollapsed" />
+          <Expand v-else />
+        </el-icon>
+      </div>
     </el-aside>
 
     <el-container>
@@ -62,7 +79,7 @@
         <span class="header-title">{{ pageTitle }}</span>
         <div class="header-right">
           <span class="header-time">{{ currentTime }}</span>
-          <el-tag type="success" size="small">v1.0.0</el-tag>
+          <el-tag type="success" size="small">v2.0.0</el-tag>
 
           <!-- 用户下拉 -->
           <el-dropdown trigger="click" @command="handleUserCommand">
@@ -134,7 +151,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { formatTime } from '@/utils/orderNo'
@@ -143,7 +160,7 @@ import { useSettingsStore } from '@/stores/settings'
 import {
   ShoppingCart, Goods, List, DataLine, User, Box,
   Discount, Setting,   Key, UserFilled, CaretBottom,
-  Lock, SwitchButton,
+  Lock, SwitchButton,  Fold, Expand,
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -151,9 +168,47 @@ const router = useRouter()
 const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
 
+const sidebarCollapsed = ref(false)
+
+// ─── 侧边栏拖拽调整宽度 ──────────────────────────────────
+const SIDEBAR_MIN = 120
+const SIDEBAR_MAX = 360
+const SIDEBAR_DEFAULT = 180
+const SIDEBAR_STORAGE_KEY = 'sidebar-width'
+
+const sidebarWidth = ref(Number(localStorage.getItem(SIDEBAR_STORAGE_KEY)) || SIDEBAR_DEFAULT)
+const isDragging = ref(false)
+
+function startResize(e: MouseEvent) {
+  isDragging.value = true
+  const startX = e.clientX
+  const startWidth = sidebarWidth.value
+
+  // 拖拽时禁用 transition 避免卡顿
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+
+  function onMouseMove(ev: MouseEvent) {
+    const delta = ev.clientX - startX
+    sidebarWidth.value = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, startWidth + delta))
+  }
+
+  function onMouseUp() {
+    isDragging.value = false
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarWidth.value))
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
+}
+
 const currentTime = ref(formatTime(Date.now()))
 const activeRoute = computed(() => route.path)
-const pageTitle = computed(() => (route.meta?.title as string) ?? '聚财收银系统')
+const pageTitle = computed(() => (route.meta?.title as string) ?? '聚买买零售收银系统')
 const shopName = computed(() => settingsStore.shopName)
 const shopLogo = computed(() => settingsStore.shopLogo)
 
@@ -279,10 +334,14 @@ async function handleUserCommand(cmd: string) {
   overflow: hidden;
   margin: 0;
   padding: 0;
-  width: 180px;
   flex-shrink: 0;
   position: relative;
   left: 0;
+  transition: width 0.28s ease;
+}
+
+.sidebar.sidebar--dragging {
+  transition: none;
 }
 
 :deep(.el-aside) {
@@ -300,12 +359,16 @@ async function handleUserCommand(cmd: string) {
 .logo {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 18px 20px;
   color: #fff;
   font-size: 15px;
   font-weight: 500;
   border-bottom: 1px solid rgba(255,255,255,0.08);
+  white-space: nowrap;
+  overflow: hidden;
+  transition: padding 0.28s ease;
 }
 
 .logo-icon {
@@ -389,8 +452,67 @@ async function handleUserCommand(cmd: string) {
 
 .app-main {
   background: #f5f7fa;
-  padding: 0;
+  padding: 16px 20px 0 20px;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+/* ─── 收起/展开按钮 ─── */
+.collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.45);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  transition: color 0.2s;
+}
+
+.collapse-btn:hover {
+  color: #409eff;
+}
+
+/* ─── 拖拽调整宽度手柄 ─── */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  z-index: 10;
+  cursor: col-resize;
+}
+
+.resize-handle:hover,
+.resize-handle--active {
+  background: rgba(64, 158, 255, 0.35);
+}
+
+/* ─── el-menu collapse 过渡 ─── */
+.sidebar-menu:not(.el-menu--collapse) {
+  width: 100%;
+}
+
+:deep(.el-menu--collapse) {
+  width: 64px;
+}
+
+:deep(.el-menu--collapse .el-menu-item) {
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.el-menu--collapse .el-menu-item .el-icon) {
+  margin-right: 0 !important;
+}
+
+:deep(.el-menu--collapse .el-tooltip__trigger) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 </style>

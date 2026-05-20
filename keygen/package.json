@@ -1,0 +1,33 @@
+{
+  "name": "retailpos-keygen",
+  "version": "2.0.0",
+  "description": "聚买买零售收银系统 - 授权注册机",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^29.4.0",
+    "electron-builder": "^26.8.0"
+  },
+  "build": {
+    "appId": "com.retailpos.keygen",
+    "productName": "聚买买零售收银-注册机",
+    "directories": {
+      "output": "dist2",
+      "buildResources": "."
+    },
+    "win": {
+      "target": "portable",
+      "icon": "app-icon.ico"
+    },
+    "files": [
+      "main.js",
+      "index.html"
+    ],
+    "portable": {
+      "artifactName": "聚买买零售收银-注册机.exe"
+    }
+  }
+}

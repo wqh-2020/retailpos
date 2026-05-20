@@ -94,15 +94,20 @@
                 <span style="color: #606266; font-size: 12px">{{ formatMoney(row.product.price) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="数量" width="110">
+            <el-table-column label="数量" width="80">
               <template #default="{ row }">
-                <el-input-number
-                  :model-value="row.quantity"
-                  :min="1"
-                  :max="9999"
+                <el-input
+                  :model-value="String(row.quantity)"
                   size="small"
-                  controls-position="right"
-                  @change="(v: number | undefined) => cartStore.updateQuantity(row.product.id!, v || 1)"
+                  @blur="(e: FocusEvent) => {
+                    const v = parseInt((e.target as HTMLInputElement).value) || 1
+                    cartStore.updateQuantity(row.product.id!, v)
+                  }"
+                  @keyup.enter="(e: KeyboardEvent) => {
+                    const v = parseInt((e.target as HTMLInputElement).value) || 1
+                    cartStore.updateQuantity(row.product.id!, v)
+                    ;(e.target as HTMLInputElement).blur()
+                  }"
                 />
               </template>
             </el-table-column>
@@ -277,15 +282,18 @@ async function onPaid(payload: {
 
   // 询问是否打印小票
   try {
-    await ElMessageBox.confirm('收款成功！是否打印小票？', '打印小票', {
-      confirmButtonText: '打印',
-      cancelButtonText: '不打印',
+    const { value } = await ElMessageBox.confirm('收款成功！是否打印小票？', '打印小票', {
+      confirmButtonText: '不打印',
+      cancelButtonText: '打印',
       type: 'success',
       distinguishCancelAndClose: true,
     })
-    receiptRef.value?.print()
-  } catch {
-    // 用户取消，不打印
+    // 不打印（确认按钮），直接结束
+  } catch (action: any) {
+    // 用户点击了"打印"按钮（取消），打印小票
+    if (action === 'cancel') {
+      receiptRef.value?.print()
+    }
   }
 }
 

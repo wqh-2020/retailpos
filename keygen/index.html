@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>聚买买零售收银 - 注册机</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #1d2b3a 0%, #2c3e50 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #303133;
+  }
+  .container {
+    background: #fff;
+    border-radius: 12px;
+    padding: 32px;
+    width: 460px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    color: #1d2b3a;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: #909399;
+    margin-bottom: 28px;
+  }
+  .form-group {
+    margin-bottom: 18px;
+  }
+  label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #606266;
+    margin-bottom: 6px;
+  }
+  input[type="text"], input[type="date"], select {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #dcdfe6;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #303133;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus {
+    border-color: #409eff;
+  }
+  .machine-id-input {
+    font-family: monospace;
+    font-size: 15px;
+    letter-spacing: 1px;
+    background: #f5f7fa;
+  }
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .btn {
+    flex: 1;
+    height: 40px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary {
+    background: #409eff;
+    color: #fff;
+  }
+  .btn-primary:hover { background: #66b1ff; }
+  .btn-success {
+    background: #67c23a;
+    color: #fff;
+  }
+  .btn-success:hover { background: #85ce61; }
+  .result-box {
+    margin-top: 20px;
+    padding: 16px;
+    background: #f0f9eb;
+    border: 1px solid #e1f3d8;
+    border-radius: 8px;
+    display: none;
+  }
+  .result-box.show { display: block; }
+  .result-box.error {
+    background: #fef0f0;
+    border-color: #fde2e2;
+  }
+  .result-label {
+    font-size: 12px;
+    color: #909399;
+    margin-bottom: 8px;
+  }
+  .result-code {
+    font-family: monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: #303133;
+    letter-spacing: 2px;
+    word-break: break-all;
+  }
+  .result-code.error-text {
+    color: #f56c6c;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .copy-tip {
+    font-size: 12px;
+    color: #67c23a;
+    margin-top: 8px;
+    display: none;
+  }
+  .copy-tip.show { display: block; }
+  .expiry-row {
+    display: flex;
+    gap: 10px;
+  }
+  .expiry-row select, .expiry-row input {
+    flex: 1;
+  }
+  .divider {
+    height: 1px;
+    background: #ebeef5;
+    margin: 20px 0;
+  }
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: #c0c4cc;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>聚买买零售收银 - 授权注册机</h1>
+  <p class="subtitle">根据机器码生成激活码</p>
+
+  <div class="form-group">
+    <label>机器码</label>
+    <input type="text" id="machineId" class="machine-id-input" placeholder="请输入客户机器码（如 A3B2-C1D0-E9F8-G7H6）">
+  </div>
+
+  <div class="form-group">
+    <label>授权有效期</label>
+    <div class="expiry-row">
+      <select id="preset">
+        <option value="custom">自定义日期</option>
+        <option value="1m">1 个月</option>
+        <option value="3m" selected>3 个月</option>
+        <option value="6m">6 个月</option>
+        <option value="1y">1 年</option>
+        <option value="permanent">永久授权</option>
+      </select>
+      <input type="date" id="expiryDate">
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="generate()">生成激活码</button>
+  </div>
+
+  <div class="result-box" id="resultBox">
+    <div class="result-label">激活码（含到期日期 <span id="resultExpiry"></span>）</div>
+    <div class="result-code" id="resultCode"></div>
+    <div class="btn-row" style="margin-top: 12px">
+      <button class="btn btn-success" onclick="copyCode()">复制激活码</button>
+    </div>
+    <div class="copy-tip" id="copyTip">已复制到剪贴板！</div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="footer">聚买买零售收银系统 注册机 v2.0.0 · 仅供授权管理使用</div>
+</div>
+
+<script>
+// ─── 与 POS 系统相同的密钥和算法 ───
+const LICENSE_SECRET = 'retailpos_lic_secret_2024'
+const BASE32_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+
+function bytesToBase32(bytes) {
+  let bits = ''
+  for (const b of bytes) bits += b.toString(2).padStart(8, '0')
+  let result = ''
+  for (let i = 0; i + 5 <= bits.length; i += 5) {
+    result += BASE32_CHARS[parseInt(bits.slice(i, i + 5), 2)]
+  }
+  return result
+}
+
+function formatCode(raw, groupSize = 4) {
+  return raw.slice(0, 20).toUpperCase().replace(new RegExp('(.{' + groupSize + '})', 'g'), '$1-').replace(/-$/, '')
+}
+
+async function hmacSha256(key, data) {
+  const encoder = new TextEncoder()
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', encoder.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  )
+  const buf = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(data))
+  return new Uint8Array(buf)
+}
+
+async function generateCode(machineId, expiryDate) {
+  const payload = machineId + '|' + expiryDate
+  const mac = await hmacSha256(LICENSE_SECRET, payload)
+  const base32 = bytesToBase32(mac.slice(0, 10)) // 10 bytes → 16 Base32 chars
+  const sig = formatCode(base32, 4) // XXXX-XXXX-XXXX-XXXX
+  // 到期日期编码：2026-12-31 → 20261231，permanent → 99999999
+  const datePart = expiryDate === 'permanent' ? '99999999' : expiryDate.replace(/-/g, '')
+  return datePart + '-' + sig
+}
+
+// ─── UI 逻辑 ───
+
+const presetSelect = document.getElementById('preset')
+const expiryDateInput = document.getElementById('expiryDate')
+const machineIdInput = document.getElementById('machineId')
+const resultBox = document.getElementById('resultBox')
+const resultCode = document.getElementById('resultCode')
+const resultExpiry = document.getElementById('resultExpiry')
+const copyTip = document.getElementById('copyTip')
+
+// 初始化日期
+function initDate() {
+  const now = new Date()
+  now.setMonth(now.getMonth() + 3)
+  expiryDateInput.value = now.toISOString().slice(0, 10)
+  expiryDateInput.disabled = true
+}
+initDate()
+
+presetSelect.addEventListener('change', () => {
+  const val = presetSelect.value
+  if (val === 'permanent') {
+    expiryDateInput.value = ''
+    expiryDateInput.disabled = true
+  } else if (val === 'custom') {
+    expiryDateInput.disabled = false
+  } else {
+    const now = new Date()
+    const durations = { '1m': 1, '3m': 3, '6m': 6, '1y': 12 }
+    const months = durations[val] || 3
+    now.setMonth(now.getMonth() + months)
+    expiryDateInput.value = now.toISOString().slice(0, 10)
+    expiryDateInput.disabled = true
+  }
+})
+
+async function generate() {
+  const mid = machineIdInput.value.trim()
+  if (!mid) {
+    showError('请输入机器码')
+    return
+  }
+
+  let expiry = ''
+  if (presetSelect.value === 'permanent') {
+    expiry = 'permanent'
+  } else {
+    expiry = expiryDateInput.value
+    if (!expiry) {
+      showError('请选择授权到期日期')
+      return
+    }
+  }
+
+  try {
+    const code = await generateCode(mid, expiry)
+    resultBox.classList.remove('error')
+    resultCode.classList.remove('error-text')
+    resultCode.textContent = code
+    resultExpiry.textContent = expiry === 'permanent' ? '永久' : expiry
+    resultBox.classList.add('show')
+    copyTip.classList.remove('show')
+  } catch (e) {
+    showError('生成失败：' + e.message)
+  }
+}
+
+function showError(msg) {
+  resultBox.classList.add('show', 'error')
+  resultCode.classList.add('error-text')
+  resultCode.textContent = msg
+  copyTip.classList.remove('show')
+}
+
+function copyCode() {
+  const code = resultCode.textContent
+  navigator.clipboard.writeText(code).then(() => {
+    copyTip.classList.add('show')
+    setTimeout(() => copyTip.classList.remove('show'), 2000)
+  }).catch(() => {
+    // fallback
+    const textarea = document.createElement('textarea')
+    textarea.value = code
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    copyTip.classList.add('show')
+    setTimeout(() => copyTip.classList.remove('show'), 2000)
+  })
+}
+
+// 回车快捷键
+machineIdInput.addEventListener('keyup', (e) => {
+  if (e.key === 'Enter') generate()
+})
+</script>
+</body>
+</html>

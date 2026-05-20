@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>聚买买零售收银系统 - 测试报告</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #1d2b3a; line-height: 1.6; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+    h1 { font-size: 28px; margin-bottom: 8px; color: #1d2b3a; }
+    .subtitle { color: #909399; font-size: 14px; margin-bottom: 24px; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .badge-pass { background: #e1f3d8; color: #67c23a; }
+    .badge-all { background: #ecf5ff; color: #409eff; }
+    .summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+    .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .card .number { font-size: 32px; font-weight: 700; }
+    .card .label { font-size: 13px; color: #909399; margin-top: 4px; }
+    .card.green .number { color: #67c23a; }
+    .card.blue .number { color: #409eff; }
+    .card.orange .number { color: #e6a23c; }
+    .card.red .number { color: #f56c6c; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    th { background: #f5f7fa; text-align: left; padding: 12px 16px; font-size: 13px; color: #606266; font-weight: 600; }
+    td { padding: 12px 16px; border-top: 1px solid #f0f2f5; font-size: 13px; }
+    tr:hover td { background: #fafbfc; }
+    .status-icon { display: inline-block; width: 18px; height: 18px; border-radius: 50%; text-align: center; line-height: 18px; color: #fff; font-size: 11px; }
+    .status-pass { background: #67c23a; }
+    .test-file { font-family: 'SF Mono', Consolas, monospace; font-size: 12px; color: #409eff; }
+    .section { margin-bottom: 32px; }
+    .section h2 { font-size: 18px; margin-bottom: 12px; padding-left: 12px; border-left: 3px solid #409eff; }
+    .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .category-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .category-card h3 { font-size: 15px; margin-bottom: 8px; }
+    .category-card ul { list-style: none; }
+    .category-card li { font-size: 13px; color: #606266; padding: 3px 0; }
+    .category-card li::before { content: "✓ "; color: #67c23a; font-weight: bold; }
+    .footer { text-align: center; color: #c0c4cc; font-size: 12px; margin-top: 40px; padding: 20px 0; border-top: 1px solid #ebeef5; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>聚买买零售收银系统 (retailpos) — 测试报告</h1>
+    <p class="subtitle">生成时间：2026-05-20 00:14 | 框架：Vitest 4.1.6 + @vue/test-utils + happy-dom + fake-indexeddb</p>
+
+    <div class="summary-cards">
+      <div class="card green">
+        <div class="number">189</div>
+        <div class="label">通过用例</div>
+      </div>
+      <div class="card red">
+        <div class="number">0</div>
+        <div class="label">失败用例</div>
+      </div>
+      <div class="card blue">
+        <div class="number">12</div>
+        <div class="label">测试文件</div>
+      </div>
+      <div class="card orange">
+        <div class="number">7.3s</div>
+        <div class="label">总耗时</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>测试文件明细</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 40px">状态</th>
+            <th>测试文件</th>
+            <th style="width: 80px">用例数</th>
+            <th style="width: 80px">耗时</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/utils/money.test.ts</td>
+            <td>23</td><td>15ms</td>
+          </tr>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/utils/orderNo.test.ts</td>
+            <td>8</td><td>50ms</td>
+          </tr>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/utils/license.test.ts</td>
+            <td>28</td><td>27ms</td>
+          </tr>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/db/password.test.ts</td>
+            <td>5</td><td>8ms</td>
+          </tr>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/db/auth.permission.test.ts</td>
+            <td>5</td><td>6ms</td>
+          </tr>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/db/db.test.ts</td>
+            <td>76</td><td>1415ms</td>
+          </tr>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/stores/cart.test.ts</td>
+            <td>17</td><td>25ms</td>
+          </tr>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/stores/auth.test.ts</td>
+            <td>8</td><td>18ms</td>
+          </tr>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/stores/settings.test.ts</td>
+            <td>4</td><td>54ms</td>
+          </tr>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/views/Login.test.ts</td>
+            <td>5</td><td>97ms</td>
+          </tr>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/components/cashier/PayDialog.test.ts</td>
+            <td>3</td><td>67ms</td>
+          </tr>
+          <tr>
+            <td><span class="status-icon status-pass">✓</span></td>
+            <td class="test-file">src/components/cashier/ReceiptPrint.test.ts</td>
+            <td>7</td><td>143ms</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>测试覆盖范围</h2>
+      <div class="category-grid">
+        <div class="category-card">
+          <h3>💰 工具函数 (59 用例)</h3>
+          <ul>
+            <li>fenToYuan / yuanToFen 金额转换</li>
+            <li>formatMoney / formatYuan 格式化</li>
+            <li>applyDiscount 折扣计算</li>
+            <li>formatDate / formatDateOnly 时间格式化</li>
+            <li>generateOrderNo 订单号生成</li>
+            <li>formatTime / formatDate 日期格式化</li>
+            <li>todayStart / todayEnd 时间边界</li>
+            <li>parseActivationExpiry 激活码解析</li>
+            <li>generateMachineId 机器码生成</li>
+            <li>generateActivationCode 激活码生成</li>
+            <li>verifyActivationCode 激活码验证</li>
+            <li>getLicenseStatus 授权状态判断</li>
+            <li>saveLicense / clearLicense 存储</li>
+            <li>ensureFirstLaunch 首次启动</li>
+          </ul>
+        </div>
+        <div class="category-card">
+          <h3>🗄️ 数据库层 (81 用例)</h3>
+          <ul>
+            <li>hashPassword / verifyPassword 密码</li>
+            <li>initDefaultData 初始化默认数据</li>
+            <li>分类 CRUD 操作</li>
+            <li>商品 CRUD / 搜索 / 软删除</li>
+            <li>订单创建（事务）/ 查询 / 分页</li>
+            <li>订单退款 / 作废</li>
+            <li>销售统计 / 支付方式统计</li>
+            <li>会员 CRUD / 积分操作（增减兑换）</li>
+            <li>促销查询（有效期/等级/满减/买赠）</li>
+            <li>库存入库/出库/不足校验</li>
+            <li>报表：Top 商品 / 分类统计 / 每日趋势</li>
+            <li>认证登录/用户管理/角色权限</li>
+          </ul>
+        </div>
+        <div class="category-card">
+          <h3>🏪 Pinia Store (29 用例)</h3>
+          <ul>
+            <li>购物车：添加/叠加/移除/清空</li>
+            <li>购物车：整单折扣/单品折扣</li>
+            <li>购物车：挂单/取单/删除挂单</li>
+            <li>购物车：数量更新计算</li>
+            <li>Auth：登录状态/权限检查</li>
+            <li>Auth：admin 通配符权限</li>
+            <li>Auth：计算属性（userId/username）</li>
+            <li>Settings：默认值/加载/保存</li>
+            <li>Settings：enabledPaymentMethods 过滤</li>
+          </ul>
+        </div>
+        <div class="category-card">
+          <h3>🎨 Vue 组件 (20 用例)</h3>
+          <ul>
+            <li>Login：页面渲染/输入框/按钮</li>
+            <li>Login：默认账号提示/错误信息</li>
+            <li>PayDialog：应收金额显示</li>
+            <li>PayDialog：确认/取消按钮</li>
+            <li>PayDialog：支付方式选择区</li>
+            <li>ReceiptPrint：小票结构渲染</li>
+            <li>ReceiptPrint：订单号/商品明细</li>
+            <li>ReceiptPrint：合计/支付/页脚</li>
+            <li>ReceiptPrint：折扣标记显示</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>测试技术栈</h2>
+      <table>
+        <tbody>
+          <tr><td><strong>测试运行器</strong></td><td>Vitest 4.1.6</td></tr>
+          <tr><td><strong>Vue 组件测试</strong></td><td>@vue/test-utils 2.4.10</td></tr>
+          <tr><td><strong>DOM 环境</strong></td><td>happy-dom 20.9.0</td></tr>
+          <tr><td><strong>IndexedDB Mock</strong></td><td>fake-indexeddb</td></tr>
+          <tr><td><strong>状态管理</strong></td><td>Pinia（createPinia 测试实例）</td></tr>
+          <tr><td><strong>UI 框架</strong></td><td>Element Plus（全局挂载 + stub）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      聚买买零售收银系统 © 2026 — 全部 189 个测试用例通过
+    </div>
+  </div>
+</body>
+</html>

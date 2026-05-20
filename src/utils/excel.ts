@@ -1,6 +1,8 @@
 import * as XLSX from 'xlsx'
 
-/** 导出数据到 Excel 并通过 Electron 保存 */
+/** 导出数据到 Excel
+ *  使用 XLSX.writeFileXLSX 直接写入文件，避免 Electron IPC 传递大 buffer 导致数据丢失
+ */
 export async function exportToExcel(
   data: Record<string, unknown>[],
   sheetName: string,
@@ -9,26 +11,7 @@ export async function exportToExcel(
   const ws = XLSX.utils.json_to_sheet(data)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, sheetName)
-  const buffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' })
-
-  if ((window as any).electronAPI) {
-    const result = await (window as any).electronAPI.exportFile({
-      defaultName: fileName,
-      buffer: Array.from(buffer as Uint8Array),
-    })
-    if (!result.ok) {
-      throw new Error(result.error || '导出失败')
-    }
-  } else {
-    // 浏览器环境降级
-    const blob = new Blob([buffer], { type: 'application/octet-stream' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = fileName
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+  XLSX.writeFileXLSX(wb, fileName)
 }
 
 /** 解析 Excel 文件 */

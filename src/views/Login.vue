@@ -8,8 +8,13 @@
         <div v-else class="login-logo">
           <el-icon size="36" color="#409eff"><ShoppingCart /></el-icon>
         </div>
-        <h2 class="login-title">{{ shopName || '聚财收银系统' }}</h2>
+        <h2 class="login-title">{{ shopName || '聚买买零售收银系统' }}</h2>
         <p class="login-subtitle">请登录以继续</p>
+      </div>
+
+      <div v-if="licenseWarning" class="license-warning" :class="{ 'is-expired': licenseWarning.includes('已锁定') }">
+        <el-icon><WarningFilled /></el-icon>
+        {{ licenseWarning }}
       </div>
 
       <el-form
@@ -71,12 +76,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
 import { ShoppingCart, WarningFilled } from '@element-plus/icons-vue'
+import { getLicenseStatus } from '@/utils/license'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -87,11 +93,20 @@ const loading = ref(false)
 const errorMsg = ref('')
 const shopName = ref('')
 const shopLogo = ref('')
+const licenseWarning = ref('')
 
 onMounted(async () => {
   await settingsStore.load()
   shopName.value = settingsStore.shopName
   shopLogo.value = settingsStore.shopLogo || ''
+  const lic = getLicenseStatus()
+  if (!lic.valid) {
+    if (lic.trial) {
+      licenseWarning.value = '试用中（剩余 ' + lic.trialDaysLeft + ' 天），请尽快激活'
+    } else {
+      licenseWarning.value = lic.reason + '，系统已锁定'
+    }
+  }
 })
 
 const form = reactive({
@@ -113,6 +128,13 @@ async function handleLogin() {
   errorMsg.value = ''
 
   try {
+    // 授权检查
+    const lic = getLicenseStatus()
+    if (!lic.valid && !lic.trial) {
+      errorMsg.value = lic.reason + '，请联系管理员获取激活码'
+      return
+    }
+
     const result = await authStore.login(form.username, form.password)
     if (!result.ok) {
       errorMsg.value = result.error || '登录失败'
@@ -202,6 +224,24 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.license-warning {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: #fdf6ec;
+  border: 1px solid #faecd8;
+  border-radius: 6px;
+  color: #e6a23c;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.license-warning.is-expired {
+  background: #fef0f0;
+  border-color: #fde2e2;
+  color: #f56c6c;
 }
 
 .login-footer {

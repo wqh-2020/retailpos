@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { getLicenseStatus } from '@/utils/license'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -81,9 +82,24 @@ router.beforeEach(async (to) => {
   // 白名单：登录页直接放行
   if (to.path === '/login') {
     if (auth.isLoggedIn) {
+      // 已登录但未授权/已过期 → 强制退出
+      const lic = getLicenseStatus()
+      if (!lic.valid) {
+        auth.logout()
+        return '/login'
+      }
       return '/cashier'
     }
     return true
+  }
+
+  // 授权检查（在登录检查之后）
+  if (auth.isLoggedIn) {
+    const lic = getLicenseStatus()
+    if (!lic.valid && !lic.trial) {
+      auth.logout()
+      return '/login'
+    }
   }
 
   // 其他页面需要登录

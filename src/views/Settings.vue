@@ -58,8 +58,22 @@
 
       <!-- ── 支付方式 ── -->
       <el-tab-pane label="支付方式" name="payment">
-        <div class="tab-tip">可拖动行调整顺序，关闭开关则该方式不在收银台显示</div>
-        <el-table :data="payMethods" row-key="code" style="max-width: 520px; margin-top: 8px">
+        <div class="tab-tip">拖动左侧手柄调整顺序，关闭开关则该方式不在收银台显示</div>
+        <el-table
+          :data="payMethods"
+          row-key="code"
+          style="max-width: 520px; margin-top: 8px"
+        >
+          <el-table-column width="44" align="center" class-name="drag-col">
+            <template #default="{ $index }">
+              <span
+                class="drag-handle"
+                @mousedown.prevent="startPayDrag($event, $index)"
+              >
+                <el-icon :size="14"><Rank /></el-icon>
+              </span>
+            </template>
+          </el-table-column>
           <el-table-column label="支付方式" min-width="120">
             <template #default="{ row }">
               <div style="display: flex; align-items: center; gap: 8px">
@@ -84,37 +98,6 @@
         </el-table>
       </el-tab-pane>
 
-      <!-- ── 操作员管理 ── -->
-      <el-tab-pane label="操作员" name="operators">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px">
-          <span class="tab-tip">操作员可使用 PIN 码在收银台切换身份</span>
-          <el-button type="primary" size="small" @click="openAddOperator">
-            <el-icon><Plus /></el-icon> 新增操作员
-          </el-button>
-        </div>
-        <el-table :data="operators" style="max-width: 560px">
-          <el-table-column label="姓名" prop="name" />
-          <el-table-column label="PIN码" width="100">
-            <template #default="{ row }">
-              <span style="color: #909399">{{ row.pin ? '******' : '未设置' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" width="80" align="center">
-            <template #default="{ row }">
-              <el-tag :type="row.isActive ? 'success' : 'info'" size="small">
-                {{ row.isActive ? '启用' : '停用' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="140">
-            <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="openEditOperator(row)">编辑</el-button>
-              <el-button link type="danger" size="small" @click="doDeleteOperator(row)">停用</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
-
       <!-- ── 数据备份 ── -->
       <el-tab-pane label="数据备份" name="backup">
         <el-alert type="info" :closable="false" style="max-width: 560px; margin-bottom: 16px">
@@ -129,53 +112,150 @@
             <el-icon><Upload /></el-icon> 从备份恢复
           </el-button>
         </div>
-        <el-card shadow="never" header="关于" style="max-width: 560px; margin-top: 20px">
-          <div style="font-size: 13px; color: #606266; line-height: 2.2">
-            <div>聚财收银系统 <strong>v1.0.0</strong></div>
-            <div>本地离线版，所有数据存储在设备本地 IndexedDB</div>
-            <div style="color: #c0c4cc; font-size: 12px; margin-top: 4px">Vue 3 + Electron + Dexie.js</div>
-          </div>
-        </el-card>
+      </el-tab-pane>
+      <!-- ── 授权注册 ── -->
+      <el-tab-pane name="license">
+        <template #label><el-icon style="margin-right:4px"><Key /></el-icon> 授权注册</template>
+        <div style="max-width: 600px">
+          <!-- 机器码 -->
+          <el-card shadow="never" style="margin-bottom: 16px">
+            <template #header>
+              <span style="font-weight: 600">本机机器码</span>
+            </template>
+            <div v-if="isElectron && machineId" style="display: flex; align-items: center; gap: 12px">
+              <el-input :model-value="machineId" readonly style="font-family: monospace; font-size: 15px; letter-spacing: 1px; flex: 1" />
+              <el-button @click="copyMachineId"><el-icon><CopyDocument /></el-icon> 复制</el-button>
+            </div>
+            <el-alert v-else type="warning" :closable="false" show-icon>
+              非 Electron 环境无法获取机器码，请在桌面客户端中使用此功能。
+            </el-alert>
+            <div class="form-tip" style="margin-top: 8px">请将此机器码发送给管理员获取激活码</div>
+          </el-card>
+
+          <!-- 激活码输入 -->
+          <el-card v-if="!licenseStatus.valid" shadow="never" style="margin-bottom: 16px">
+            <template #header>
+              <span style="font-weight: 600">输入激活码</span>
+            </template>
+            <div v-if="licenseStatus.trial" style="margin-bottom: 12px; font-size: 13px; color: #e6a23c">
+              试用期剩余 <strong>{{ licenseStatus.trialDaysLeft }}</strong> 天，到期后系统将锁定，请尽快激活。
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px">
+              <el-input
+                v-model="activationCode"
+                placeholder="请输入激活码，如 20261231-A3B2-C1D0-E9F8-G7H6"
+                style="font-family: monospace; font-size: 15px; letter-spacing: 1px; flex: 1"
+                @keyup.enter="doActivate"
+              />
+              <el-button type="primary" :loading="activating" @click="doActivate">激活</el-button>
+            </div>
+          </el-card>
+
+          <!-- 授权状态 -->
+          <el-card shadow="never">
+            <template #header>
+              <span style="font-weight: 600">授权状态</span>
+            </template>
+            <div v-if="licenseStatus.valid" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px">
+              <el-icon :size="20" color="#67c23a"><CircleCheckFilled /></el-icon>
+              <span style="font-size: 15px; font-weight: 600; color: #67c23a">已授权</span>
+            </div>
+            <div v-else-if="licenseStatus.trial" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px">
+              <el-icon :size="20" color="#e6a23c"><WarningFilled /></el-icon>
+              <span style="font-size: 15px; font-weight: 600; color: #e6a23c">试用中（剩余 {{ licenseStatus.trialDaysLeft }} 天）</span>
+            </div>
+            <div v-else style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px">
+              <el-icon :size="20" color="#f56c6c"><CircleCloseFilled /></el-icon>
+              <span style="font-size: 15px; font-weight: 600; color: #f56c6c">{{ licenseStatus.reason }}</span>
+            </div>
+            <div v-if="licenseStatus.valid" style="font-size: 13px; color: #606266; line-height: 2">
+              <div>到期日期：<strong>{{ licenseStatus.license.expiryDate === 'permanent' ? '永久授权' : licenseStatus.license.expiryDate }}</strong></div>
+              <div>剩余天数：<strong>{{ licenseStatus.daysLeft === null ? '永久' : licenseStatus.daysLeft + ' 天' }}</strong></div>
+              <div>激活时间：{{ new Date(licenseStatus.license.activatedAt).toLocaleString('zh-CN') }}</div>
+              <div>激活码：{{ licenseStatus.license.activationCode }}</div>
+            </div>
+            <el-button
+              v-if="licenseStatus.valid"
+              type="danger"
+              plain
+              size="small"
+              style="margin-top: 12px"
+              @click="doDeactivate"
+            >
+              <el-icon><Delete /></el-icon> 注销授权
+            </el-button>
+          </el-card>
+        </div>
+      </el-tab-pane>
+
+      <!-- ── 关于系统 ── -->
+      <el-tab-pane name="about">
+        <template #label><el-icon style="margin-right:4px"><InfoFilled /></el-icon> 关于系统</template>
+        <div style="max-width: 560px">
+          <el-card shadow="never" style="margin-bottom: 16px">
+            <div style="text-align: center; padding: 16px 0">
+              <div style="font-size: 28px; font-weight: 700; color: #303133; margin-bottom: 8px">聚买买零售收银系统</div>
+              <el-tag type="info" size="large">v2.0.0</el-tag>
+            </div>
+          </el-card>
+          <el-card shadow="never" style="margin-bottom: 16px">
+            <template #header><span style="font-weight: 600">系统信息</span></template>
+            <div style="font-size: 13px; color: #606266; line-height: 2.2">
+              <div style="display: flex; justify-content: space-between">
+                <span>系统名称</span>
+                <span>聚买买零售收银系统（离线桌面版）</span>
+              </div>
+              <div style="display: flex; justify-content: space-between">
+                <span>当前版本</span>
+                <span>v2.0.0</span>
+              </div>
+              <div style="display: flex; justify-content: space-between">
+                <span>运行环境</span>
+                <span>{{ isElectron ? 'Electron 桌面客户端' : '浏览器（开发模式）' }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between">
+                <span>授权状态</span>
+                <span :style="{ color: licenseStatus.valid ? '#67c23a' : (licenseStatus.trial ? '#e6a23c' : '#f56c6c'), fontWeight: 600 }">
+                  {{ licenseStatus.valid
+                    ? (licenseStatus.license!.expiryDate === 'permanent' ? '已授权（永久）' : `已授权（剩余 ${licenseStatus.daysLeft} 天）`)
+                    : (licenseStatus.trial ? `试用中（剩余 ${licenseStatus.trialDaysLeft} 天）` : licenseStatus.reason) }}
+                </span>
+              </div>
+              <div v-if="isElectron && machineId" style="display: flex; justify-content: space-between">
+                <span>机器码</span>
+                <span style="font-family: monospace; font-size: 12px">{{ machineId }}</span>
+              </div>
+            </div>
+          </el-card>
+          <el-card shadow="never">
+            <template #header><span style="font-weight: 600">技术栈</span></template>
+            <div style="font-size: 13px; color: #909399; line-height: 2.2">
+              <div>前端框架：Vue 3 + TypeScript</div>
+              <div>UI 组件：Element Plus</div>
+              <div>桌面框架：Electron</div>
+              <div>状态管理：Pinia</div>
+              <div>本地数据库：Dexie.js (IndexedDB)</div>
+              <div>图表库：ECharts</div>
+            </div>
+          </el-card>
+        </div>
       </el-tab-pane>
     </el-tabs>
-
-    <!-- 操作员弹窗 -->
-    <el-dialog
-      v-model="showOpDialog"
-      :title="editingOp.id ? '编辑操作员' : '新增操作员'"
-      width="360px"
-      :append-to-body="true"
-    >
-      <el-form :model="editingOp" label-width="70px">
-        <el-form-item label="姓名">
-          <el-input v-model="editingOp.name" placeholder="员工姓名" />
-        </el-form-item>
-        <el-form-item label="PIN码">
-          <el-input
-            v-model="editingOp.pin"
-            type="password"
-            placeholder="4-6 位数字，留空则不设 PIN"
-            maxlength="6"
-            show-password
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showOpDialog = false">取消</el-button>
-        <el-button type="primary" :loading="savingOp" @click="saveOperator">保存</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Download, Upload, Plus, Shop } from '@element-plus/icons-vue'
+import { Download, Upload, Shop, Rank, Key, InfoFilled, CopyDocument, Delete, CircleCheckFilled, CircleCloseFilled, WarningFilled } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
 import { db } from '@/db'
-import { getOperators, addOperator, updateOperator, deleteOperator } from '@/db/reports'
-import type { Operator, PaymentMethod } from '@/types'
+import type { PaymentMethod } from '@/types'
+import {
+  getLicenseStatus, saveLicense, clearLicense,
+  verifyActivationCode, parseActivationExpiry,
+  type LicenseData, type LicenseStatus,
+} from '@/utils/license'
 
 const settings = useSettingsStore()
 const activeTab = ref('shop')
@@ -193,11 +273,12 @@ const receiptForm = ref({ paperWidth: '80', showBarcode: true, footer: '' })
 // ── 支付方式 ──
 const payMethods = ref<PaymentMethod[]>([])
 
-// ── 操作员 ──
-const operators = ref<Operator[]>([])
-const showOpDialog = ref(false)
-const savingOp = ref(false)
-const editingOp = ref<{ id?: number; name: string; pin: string }>({ name: '', pin: '' })
+// ── 授权注册 ──
+const machineId = ref('')
+const activationCode = ref('')
+const activating = ref(false)
+const licenseStatus = ref<LicenseStatus>({ valid: false, reason: '未授权', trial: false })
+const isElectron = !!(window as any).electronAPI?.getMachineId
 
 onMounted(async () => {
   await settings.load()
@@ -214,7 +295,13 @@ onMounted(async () => {
     footer: settings.receiptFooter,
   }
   payMethods.value = JSON.parse(JSON.stringify(settings.paymentMethods))
-  await loadOperators()
+  // 加载授权状态
+  licenseStatus.value = getLicenseStatus()
+  // 获取机器码
+  if (isElectron) {
+    const res = await (window as any).electronAPI.getMachineId()
+    if (res.ok) machineId.value = res.machineId
+  }
 })
 
 // 保存店铺信息
@@ -274,52 +361,161 @@ async function savePayMethods() {
   ElMessage.success('支付方式已更新')
 }
 
-// ── 操作员 ──
-async function loadOperators() {
-  operators.value = await db.operators.toArray()
-}
+// ── 支付方式拖拽排序（纯鼠标事件） ──
 
-function openAddOperator() {
-  editingOp.value = { name: '', pin: '' }
-  showOpDialog.value = true
-}
+function startPayDrag(e: MouseEvent, index: number) {
+  // 找到表格 tbody
+  const tableWrapper = (e.target as HTMLElement).closest('.el-table')
+  if (!tableWrapper) return
+  const tbody = tableWrapper.querySelector('.el-table__body-wrapper tbody') as HTMLElement
+  if (!tbody) return
+  const rows = Array.from(tbody.children) as HTMLElement[]
+  if (!rows[index]) return
 
-function openEditOperator(row: Operator) {
-  editingOp.value = { id: row.id, name: row.name, pin: '' }
-  showOpDialog.value = true
-}
+  const rowRect = rows[index].getBoundingClientRect()
+  const fromIndex = index
 
-async function saveOperator() {
-  if (!editingOp.value.name.trim()) {
-    ElMessage.warning('请输入姓名')
-    return
-  }
-  if (editingOp.value.pin && (editingOp.value.pin.length < 4 || !/^\d+$/.test(editingOp.value.pin))) {
-    ElMessage.warning('PIN 码须为 4-6 位数字')
-    return
-  }
-  savingOp.value = true
-  try {
-    if (editingOp.value.id) {
-      await updateOperator(editingOp.value.id, editingOp.value.name, editingOp.value.pin)
-    } else {
-      await addOperator(editingOp.value.name, editingOp.value.pin)
+  // 创建拖拽影像（clone）
+  const clone = rows[index].cloneNode(true) as HTMLElement
+  clone.style.cssText = `
+    position: fixed; left: ${rowRect.left}px; top: ${rowRect.top}px;
+    width: ${rowRect.width}px; z-index: 9999;
+    pointer-events: none; opacity: 0.85;
+    background: #ecf5ff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 4px;
+  `
+  document.body.appendChild(clone)
+
+  // 原行半透明
+  rows[index].style.opacity = '0.3'
+
+  document.body.style.cursor = 'grabbing'
+  document.body.style.userSelect = 'none'
+
+  let currentOver = -1
+
+  function onMove(ev: MouseEvent) {
+    clone.style.top = (ev.clientY - rowRect.height / 2) + 'px'
+
+    // 清除所有高亮
+    rows.forEach(r => {
+      r.style.borderTop = ''
+      r.style.borderBottom = ''
+    })
+    currentOver = -1
+
+    // 判断鼠标在哪行上方/下方
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i]
+      const rRect = r.getBoundingClientRect()
+      if (ev.clientY >= rRect.top && ev.clientY <= rRect.bottom) {
+        currentOver = i
+        if (i !== fromIndex) {
+          const mid = rRect.top + rRect.height / 2
+          if (ev.clientY < mid) {
+            r.style.borderTop = '2px solid #409eff'
+          } else {
+            r.style.borderBottom = '2px solid #409eff'
+          }
+        }
+        break
+      }
     }
-    ElMessage.success('保存成功')
-    showOpDialog.value = false
-    await loadOperators()
-  } finally {
-    savingOp.value = false
+  }
+
+  function onUp() {
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+
+    // 清除样式
+    rows.forEach(r => {
+      r.style.opacity = ''
+      r.style.borderTop = ''
+      r.style.borderBottom = ''
+    })
+    clone.remove()
+
+    // 执行排序
+    if (currentOver >= 0 && currentOver !== fromIndex) {
+      const insertIdx = currentOver > fromIndex ? currentOver + 1 : currentOver
+      const [moved] = payMethods.value.splice(fromIndex, 1)
+      payMethods.value.splice(insertIdx, 0, moved)
+      savePayMethods()
+    }
+  }
+
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
+}
+
+// ── 授权注册 ──
+
+async function copyMachineId() {
+  if (!machineId.value) return
+  try {
+    await navigator.clipboard.writeText(machineId.value)
+    ElMessage.success('机器码已复制')
+  } catch {
+    ElMessage.error('复制失败，请手动选择复制')
   }
 }
 
-async function doDeleteOperator(row: Operator) {
+async function doActivate() {
+  if (!machineId.value) {
+    ElMessage.warning('无法获取机器码，请在 Electron 环境下操作')
+    return
+  }
+  const code = activationCode.value.trim()
+  if (!code) {
+    ElMessage.warning('请输入激活码')
+    return
+  }
+
+  activating.value = true
   try {
-    await ElMessageBox.confirm(`确定停用操作员 "${row.name}"？`, '停用确认', { type: 'warning' })
-    await deleteOperator(row.id!)
-    ElMessage.success('已停用')
-    await loadOperators()
-  } catch { /* 取消 */ }
+    // 从激活码自动解析到期日期
+    const expiryDate = parseActivationExpiry(code)
+    if (!expiryDate) {
+      ElMessage.error('激活码格式无效，请检查是否完整')
+      return
+    }
+
+    const valid = await verifyActivationCode(machineId.value, code)
+    if (!valid) {
+      ElMessage.error('激活码无效，请检查机器码和激活码是否正确')
+      return
+    }
+
+    const lic: LicenseData = {
+      machineId: machineId.value,
+      expiryDate,
+      activationCode: code,
+      activatedAt: new Date().toISOString(),
+    }
+    saveLicense(lic)
+    licenseStatus.value = getLicenseStatus()
+    activationCode.value = ''
+    ElMessage.success('授权激活成功！到期日期：' + (expiryDate === 'permanent' ? '永久' : expiryDate))
+  } catch (e: any) {
+    ElMessage.error('激活失败：' + e.message)
+  } finally {
+    activating.value = false
+  }
+}
+
+async function doDeactivate() {
+  try {
+    await ElMessageBox.confirm(
+      '注销授权后系统将无法使用，需要重新激活。确定要注销吗？',
+      '注销授权',
+      { type: 'warning', confirmButtonText: '确定注销', cancelButtonText: '取消' },
+    )
+    clearLicense()
+    licenseStatus.value = getLicenseStatus()
+    ElMessage.success('授权已注销')
+  } catch { /* 用户取消 */ }
 }
 
 // ── 数据备份 ──
@@ -332,7 +528,6 @@ async function doBackup() {
       orders: await db.orders.toArray(),
       orderItems: await db.orderItems.toArray(),
       payments: await db.payments.toArray(),
-      operators: await db.operators.toArray(),
       settings: await db.settings.toArray(),
     }
     const jsonStr = JSON.stringify(data, null, 2)
@@ -373,13 +568,12 @@ async function doRestore() {
     }
 
     const data = JSON.parse(jsonStr)
-    await db.transaction('rw', [db.products, db.categories, db.orders, db.orderItems, db.payments, db.operators, db.settings], async () => {
+    await db.transaction('rw', [db.products, db.categories, db.orders, db.orderItems, db.payments, db.settings], async () => {
       await db.products.clear(); await db.products.bulkAdd(data.products ?? [])
       await db.categories.clear(); await db.categories.bulkAdd(data.categories ?? [])
       await db.orders.clear(); await db.orders.bulkAdd(data.orders ?? [])
       await db.orderItems.clear(); await db.orderItems.bulkAdd(data.orderItems ?? [])
       await db.payments.clear(); await db.payments.bulkAdd(data.payments ?? [])
-      if (data.operators) { await db.operators.clear(); await db.operators.bulkAdd(data.operators) }
       await db.settings.clear(); await db.settings.bulkAdd(data.settings ?? [])
     })
     await settings.load()
@@ -398,4 +592,24 @@ async function doRestore() {
 .form-tip { font-size: 12px; color: #909399; margin-left: 8px; }
 .logo-upload-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .logo-upload-btns { display: flex; gap: 8px; }
+</style>
+
+<!-- 全局样式：拖拽手柄 -->
+<style>
+.el-table .drag-handle {
+  cursor: grab;
+  color: #c0c4cc;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+}
+.el-table .drag-handle:hover {
+  color: #409eff;
+  background: rgba(64, 158, 255, 0.1);
+}
+.el-table .drag-handle:active {
+  cursor: grabbing;
+}
 </style>

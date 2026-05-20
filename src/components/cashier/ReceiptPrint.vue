@@ -13,7 +13,6 @@
 
       <div class="meta-row"><span>单号</span><span>{{ order.orderNo }}</span></div>
       <div class="meta-row"><span>时间</span><span>{{ formatTime(order.createdAt) }}</span></div>
-      <div v-if="operatorName" class="meta-row"><span>收银员</span><span>{{ operatorName }}</span></div>
 
       <div class="dashed-line" />
 
@@ -107,7 +106,6 @@
         <div class="dashed-line" />
         <div class="meta-row"><span>单号</span><span>{{ order.orderNo }}</span></div>
         <div class="meta-row"><span>时间</span><span>{{ formatTime(order.createdAt) }}</span></div>
-        <div v-if="operatorName" class="meta-row"><span>收银员</span><span>{{ operatorName }}</span></div>
         <div class="dashed-line" />
         <table class="items-table">
           <thead>
@@ -181,7 +179,6 @@ const props = defineProps<{
   order: Order
   items: OrderItem[]
   payments: Payment[]
-  operatorName?: string
 }>()
 
 const settings = useSettingsStore()

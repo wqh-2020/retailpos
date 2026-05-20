@@ -1,5 +1,8 @@
 import Dexie, { type Table } from 'dexie'
-import type { Product, Category, Order, OrderItem, Payment, Operator, Setting, Member, MemberPointsLog, Promotion, StockRecord, User, Role, LoginLog, OperationLog } from '@/types'
+import type { Product, Category, Order, OrderItem, Payment, Setting, Member, MemberPointsLog, Promotion, StockRecord, User, Role, LoginLog, OperationLog } from '@/types'
+
+// operators 表保留声明（数据库兼容），已废弃不再使用
+interface _Operator { id?: number; name: string; pin: string; isActive: boolean; createdAt: number }
 
 class RetailPosDB extends Dexie {
   products!: Table<Product, number>
@@ -7,7 +10,7 @@ class RetailPosDB extends Dexie {
   orders!: Table<Order, number>
   orderItems!: Table<OrderItem, number>
   payments!: Table<Payment, number>
-  operators!: Table<Operator, number>
+  operators!: Table<_Operator, number>
   settings!: Table<Setting, string>
   members!: Table<Member, number>
   memberPointsLogs!: Table<MemberPointsLog, number>
@@ -85,6 +88,7 @@ export const ALL_PERMISSIONS = [
   { code: 'order.view',       name: '查看订单',   category: 'order'    as const },
   { code: 'order.refund',     name: '退款订单',   category: 'order'    as const },
   { code: 'order.void',       name: '作废订单',   category: 'order'    as const },
+  { code: 'order.import',     name: '导入流水',   category: 'order'    as const },
   // 报表
   { code: 'stats.view',       name: '查看报表',   category: 'stats'    as const },
   { code: 'stats.export',     name: '导出报表',   category: 'stats'    as const },
@@ -138,7 +142,7 @@ const DEFAULT_ROLES: Omit<Role, 'id'>[] = [
     permissions: [
       'cashier.sale', 'cashier.refund', 'cashier.void',
       'product.view', 'product.create', 'product.edit',
-      'order.view', 'order.refund', 'order.void',
+      'order.view', 'order.refund', 'order.void', 'order.import',
       'stats.view', 'stats.export',
       'member.view', 'member.create', 'member.edit', 'member.points',
       'stock.view', 'stock.adjust',

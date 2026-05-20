@@ -108,15 +108,6 @@ export interface OperationLog {
   createdAt: number
 }
 
-// ─── 原有 Operator（保留兼容）────────────────────────────
-export interface Operator {
-  id?: number
-  name: string
-  pin: string          // SHA-256 哈希
-  isActive: boolean
-  createdAt: number
-}
-
 // ─── 权限码定义 ─────────────────────────────────────────
 export type PermissionCode =
   // 收银
@@ -125,7 +116,7 @@ export type PermissionCode =
   | 'product.view' | 'product.create' | 'product.edit' | 'product.delete'
   | 'product.import' | 'product.export'
   // 订单
-  | 'order.view' | 'order.refund' | 'order.void'
+  | 'order.view' | 'order.refund' | 'order.void' | 'order.import'
   // 报表
   | 'stats.view' | 'stats.export'
   // 会员

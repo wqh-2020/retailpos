@@ -140,20 +140,3 @@ export async function getDailyTrend(
 
   return result
 }
-
-// ─── 操作员 CRUD ────────────────────────────────────────
-export async function getOperators() {
-  return db.operators.filter((o) => o.isActive).toArray()
-}
-
-export async function addOperator(name: string, pin: string) {
-  return db.operators.add({ name, pin, isActive: true, createdAt: Date.now() })
-}
-
-export async function updateOperator(id: number, name: string, pin: string) {
-  return db.operators.update(id, { name, pin })
-}
-
-export async function deleteOperator(id: number) {
-  return db.operators.update(id, { isActive: false })
-}

@@ -3,12 +3,24 @@
     <!-- 时间范围切换 -->
     <el-card shadow="never" style="margin-bottom: 12px">
       <div class="toolbar">
-        <el-radio-group v-model="range" @change="loadAll">
+        <el-radio-group v-model="range" @change="onRangeChange">
           <el-radio-button value="today">今日</el-radio-button>
           <el-radio-button value="week">本周</el-radio-button>
           <el-radio-button value="month">本月</el-radio-button>
+          <el-radio-button value="custom">自定义</el-radio-button>
         </el-radio-group>
-        <el-divider direction="vertical" />
+        <el-date-picker
+          v-if="range === 'custom'"
+          v-model="customDateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          value-format="YYYY-MM-DD"
+          style="margin-left: 8px"
+          @change="loadAll"
+        />
+        <div style="flex: 1" />
         <el-button plain size="small" @click="handleExport">
           <el-icon><Download /></el-icon> 导出报表
         </el-button>
@@ -81,6 +93,7 @@
             <el-radio-button :value="7">近7天</el-radio-button>
             <el-radio-button :value="14">近14天</el-radio-button>
             <el-radio-button :value="30">近30天</el-radio-button>
+            <el-radio-button v-if="range === 'custom'" :value="0">全部</el-radio-button>
           </el-radio-group>
         </div>
       </template>
@@ -114,7 +127,7 @@
                 }"
               />
             </div>
-            <span class="rank-qty">× {{ item.totalQty }}</span>
+            <span class="rank-qty">x {{ item.totalQty }}</span>
             <span class="rank-amount">{{ fenToYuan(item.totalAmount) }}</span>
           </div>
         </div>
@@ -137,7 +150,8 @@ import { fenToYuan } from '@/utils/money'
 import { exportToExcel } from '@/utils/excel'
 
 const settings = useSettingsStore()
-const range = ref('today')
+const range = ref<'today' | 'week' | 'month' | 'custom'>('today')
+const customDateRange = ref<string[]>([])
 const trendDays = ref(7)
 
 const stats = ref({ total: 0, count: 0, avgAmount: 0 })
@@ -154,6 +168,11 @@ let catChart: ECharts | null = null
 let trendChart: ECharts | null = null
 
 function getTimeRange() {
+  if (range.value === 'custom' && customDateRange.value?.length === 2) {
+    const start = new Date(customDateRange.value[0] + ' 00:00:00').getTime()
+    const end = new Date(customDateRange.value[1] + ' 23:59:59').getTime()
+    return { start, end }
+  }
   const now = new Date()
   if (range.value === 'today') {
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
@@ -165,6 +184,12 @@ function getTimeRange() {
   } else {
     const start = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
     return { start, end: Date.now() }
+  }
+}
+
+function onRangeChange() {
+  if (range.value !== 'custom') {
+    loadAll()
   }
 }
 
@@ -197,10 +222,22 @@ async function loadAll() {
 }
 
 async function loadTrend() {
-  const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const startTs = startOfToday - (trendDays.value - 1) * 86400000
-  trendData.value = await getDailyTrend(startTs, trendDays.value)
+  let days: number
+  let startTs: number
+
+  if (trendDays.value === 0 && range.value === 'custom' && customDateRange.value?.length === 2) {
+    // 自定义模式"全部"：使用完整范围
+    const { start, end } = getTimeRange()
+    startTs = start
+    days = Math.ceil((end - start) / 86400000) + 1
+  } else {
+    days = trendDays.value
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    startTs = startOfToday - (days - 1) * 86400000
+  }
+
+  trendData.value = await getDailyTrend(startTs, Math.max(days, 1))
   await nextTick()
   renderTrendChart()
 }
@@ -307,12 +344,15 @@ function renderTrendChart() {
   })
 }
 
-// 导出报表
+// ─── 导出报表 ────────────────────────────────────────────
+
 async function handleExport() {
   if (!topProducts.value.length && !categoryStats.value.length) {
     ElMessage.warning('当前时段暂无数据')
     return
   }
+  const { start, end } = getTimeRange()
+  const formatDate = (ts: number) => new Date(ts).toLocaleDateString('zh-CN').replace(/\//g, '')
   const rows = topProducts.value.map((p, i) => ({
     '排名': i + 1,
     '商品名称': p.productName,
@@ -320,7 +360,7 @@ async function handleExport() {
     '销售数量': p.totalQty,
     '销售金额(元)': (p.totalAmount / 100).toFixed(2),
   }))
-  await exportToExcel(rows, '商品销售排行', `销售报表_${range.value}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '')}.xlsx`)
+  await exportToExcel(rows, '商品销售排行', `销售报表_${formatDate(start)}_${formatDate(end)}.xlsx`)
 }
 
 onMounted(loadAll)

@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   backupLoad: () => ipcRenderer.invoke('backup:load'),
   printReceipt: () => ipcRenderer.invoke('print:receipt'),
   openPath: (opts) => ipcRenderer.invoke('shell:openPath', opts),
+  getMachineId: () => ipcRenderer.invoke('get-machine-id'),
   isElectron: true,
 })

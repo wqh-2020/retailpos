@@ -26,6 +26,9 @@
         <el-button type="primary" plain @click="handleExport">
           <el-icon><Download /></el-icon> 导出Excel
         </el-button>
+        <el-button v-if="authStore.hasPerm('order.import')" plain @click="showImportDialog = true">
+          <el-icon><Upload /></el-icon> 导入流水
+        </el-button>
         <el-button plain @click="handleReset">重置筛选</el-button>
       </div>
     </el-card>
@@ -161,22 +164,90 @@
       :items="printItems"
       :payments="printPayments"
     />
+
+    <!-- 导入流水弹窗 -->
+    <el-dialog v-model="showImportDialog" title="导入流水明细" width="700px" destroy-on-close>
+      <el-alert type="info" :closable="false" style="margin-bottom: 12px">
+        请按模板格式准备 Excel 文件。同一订单号的多行商品将合并为一笔订单。
+      </el-alert>
+      <div style="margin-bottom: 12px">
+        <el-button size="small" @click="downloadImportTemplate">
+          <el-icon><Download /></el-icon> 下载导入模板
+        </el-button>
+      </div>
+      <el-upload
+        ref="importUploadRef"
+        :auto-upload="false"
+        accept=".xlsx,.xls"
+        :limit="1"
+        :on-change="handleImportFileChange"
+        :on-exceed="() => ElMessage.warning('只能上传一个文件')"
+      >
+        <el-button type="primary">选择 Excel 文件</el-button>
+      </el-upload>
+      <div v-if="importPreview.length > 0" style="margin-top: 12px">
+        <p style="font-size: 13px; color: #606266">
+          预览（共 {{ importPreview.length }} 行，其中 {{ importPreview.filter(r => r.errors.length > 0).length }} 行有错误）：
+        </p>
+        <el-table :data="importPreview.slice(0, 20)" size="small" max-height="280" stripe>
+          <el-table-column prop="index" label="行" width="50" />
+          <el-table-column prop="row.orderNo" label="订单号" width="140" show-overflow-tooltip />
+          <el-table-column prop="row.productName" label="商品" width="100" show-overflow-tooltip />
+          <el-table-column label="数量" width="60">
+            <template #default="{ row }">{{ row.row.quantity }}</template>
+          </el-table-column>
+          <el-table-column label="小计(元)" width="80">
+            <template #default="{ row }">{{ row.row.subtotalYuan }}</template>
+          </el-table-column>
+          <el-table-column label="支付方式" width="80">
+            <template #default="{ row }">{{ row.row.paymentMethod }}</template>
+          </el-table-column>
+          <el-table-column label="状态" min-width="120">
+            <template #default="{ row }">
+              <el-tag v-if="row.errors.length > 0" type="danger" size="small">
+                {{ row.errors[0] }}
+              </el-tag>
+              <el-tag v-else type="success" size="small">正常</el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+        <p v-if="importPreview.length > 20" style="font-size: 12px; color: #909399; margin-top: 4px">
+          仅显示前 20 行...
+        </p>
+      </div>
+      <template #footer>
+        <el-button @click="showImportDialog = false">取消</el-button>
+        <el-button
+          type="primary"
+          :loading="importing"
+          :disabled="importPreview.length === 0 || importPreview.some(r => r.errors.length > 0)"
+          @click="doImport"
+        >
+          确认导入 ({{ validImportCount }} 笔订单)
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Download, Printer } from '@element-plus/icons-vue'
+import { Download, Printer, Upload } from '@element-plus/icons-vue'
+import type { UploadFile } from 'element-plus'
 import type { Order, OrderItem, Payment, PaymentMethodCode } from '@/types'
 import { queryOrders, getOrderItems, getOrderPayments, refundOrder, voidOrder, getSalesStats } from '@/db/orders'
+import { parseImportRows, groupByOrder, importOrders, downloadImportTemplate as downloadTemplate } from '@/db/import-orders'
+import type { ValidateResult } from '@/db/import-orders'
 import { useSettingsStore } from '@/stores/settings'
+import { useAuthStore } from '@/stores/auth'
 import { formatMoney } from '@/utils/money'
 import { formatTime } from '@/utils/orderNo'
-import { exportToExcel } from '@/utils/excel'
+import { exportToExcel, parseExcel } from '@/utils/excel'
 import ReceiptPrint from '@/components/cashier/ReceiptPrint.vue'
 
 const settings = useSettingsStore()
+const authStore = useAuthStore()
 const methods = settings.enabledPaymentMethods
 
 const loading = ref(false)
@@ -335,6 +406,70 @@ async function handleExport() {
     })
   }
   await exportToExcel(rows, '流水明细', `流水明细_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '')}.xlsx`)
+}
+
+// ─── 导入流水 ────────────────────────────────────────────
+
+const showImportDialog = ref(false)
+const importUploadRef = ref()
+const importPreview = ref<ValidateResult[]>([])
+const importing = ref(false)
+
+const validImportCount = computed(() => {
+  const validRows = importPreview.value.filter(r => r.errors.length === 0)
+  const orderNos = new Set(validRows.map(r => r.row.orderNo))
+  return orderNos.size
+})
+
+function downloadImportTemplate() {
+  downloadTemplate()
+  ElMessage.success('模板已下载')
+}
+
+async function handleImportFileChange(uploadFile: UploadFile) {
+  if (!uploadFile.raw) return
+  try {
+    const rows = await parseExcel(uploadFile.raw)
+    if (!rows.length) {
+      ElMessage.warning('文件为空或格式不正确')
+      return
+    }
+    const { results, errors } = parseImportRows(rows)
+    importPreview.value = results
+    if (errors.length) {
+      ElMessage.warning(errors.join('；'))
+    }
+  } catch (err: any) {
+    ElMessage.error('文件解析失败：' + (err.message || '未知错误'))
+  }
+}
+
+async function doImport() {
+  const validRows = importPreview.value.filter(r => r.errors.length === 0)
+  if (!validRows.length) {
+    ElMessage.warning('没有可导入的有效数据')
+    return
+  }
+
+  const orders = groupByOrder(validRows)
+  if (!orders.length) {
+    ElMessage.warning('分组后无有效订单')
+    return
+  }
+
+  importing.value = true
+  try {
+    const count = await importOrders(orders)
+    ElMessage.success(`成功导入 ${count} 笔订单`)
+    showImportDialog.value = false
+    importPreview.value = []
+    // 刷新列表
+    loadOrders()
+  } catch (err: any) {
+    ElMessage.error('导入失败：' + (err.message || '未知错误'))
+  } finally {
+    importing.value = false
+  }
 }
 
 onMounted(loadOrders)
