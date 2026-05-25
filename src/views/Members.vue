@@ -171,6 +171,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMembers, addMember, updateMember, deleteMember, getMemberById, adjustPoints, redeemPoints, getMemberPointsLogs, getLevelLabel, MEMBER_LEVELS } from '@/db/members'
 import type { Member, MemberLevel, MemberPointsLog } from '@/types'
 import { formatYuan, formatDate } from '@/utils/money'
+import { getCurrentInstance, toRaw } from 'vue'
+
+const instance = getCurrentInstance()
 
 const keyword = ref('')
 const filterLevel = ref<MemberLevel | ''>('')
@@ -217,11 +220,12 @@ function openEdit(row: Member) {
   formVisible.value = true
 }
 async function handleSave() {
-  await formRef.value.validate()
+  const formComp = formRef.value ?? instance?.refs?.formRef as any
+  await formComp.validate()
   saving.value = true
   try {
     const data = {
-      ...form,
+      ...toRaw(form),
       totalPoints: form.points,
       discountRate: MEMBER_LEVELS.find(l => l.level === form.level)?.discountRate ?? 100,
       createdAt: isEdit.value ? form.createdAt! : Date.now(),

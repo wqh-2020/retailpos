@@ -156,6 +156,9 @@ import { getLevelLabel, MEMBER_LEVELS } from '@/db/members'
 import { getProducts } from '@/db/products'
 import { yuanToFen, fenToYuan } from '@/utils/money'
 import type { Promotion, PromotionType, MemberLevel, Product } from '@/types'
+import { getCurrentInstance, toRaw } from 'vue'
+
+const instance = getCurrentInstance()
 
 const PROMOTION_TYPES = [
   { value: 'amount_off',   label: '满减',    icon: '💰' },
@@ -280,7 +283,8 @@ function openEdit(row: Promotion) {
 }
 
 async function handleSave() {
-  await formRef.value.validate()
+  const formComp = formRef.value ?? instance?.refs?.formRef as any
+  await formComp.validate()
   saving.value = true
   try {
     const data: Omit<Promotion, 'id'> = {
@@ -294,7 +298,7 @@ async function handleSave() {
       giftName: form.giftName ?? '',
       lockProductId: form.lockProductId,
       lockPrice: form.lockPrice !== undefined ? yuanToFen(form.lockPrice) : undefined,
-      applicableLevels: form.applicableLevels,
+      applicableLevels: toRaw(form.applicableLevels),
       isActive: form.isActive,
       startDate: form.startDate instanceof Date ? form.startDate.getTime() : form.startDate,
       endDate: form.endDate instanceof Date ? form.endDate.getTime() : form.endDate,

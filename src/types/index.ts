@@ -32,6 +32,15 @@ export interface Order {
   discountAmount: number // 分
   actualAmount: number  // 分
   operatorId?: number
+  // 会员相关
+  memberId?: number
+  memberPhone?: string
+  memberLevel?: MemberLevel
+  pointsEarned?: number    // 本次消费返积分
+  pointsRedeemed?: number  // 本次积分抵扣数量
+  // 促销相关
+  promotionId?: number
+  promotionName?: string
   remark?: string
   createdAt: number
   updatedAt: number
@@ -238,6 +247,9 @@ export interface CartItem {
   quantity: number
   discountRate: number  // 0-100
   subtotal: number      // 分
+  isGift?: boolean       // 买赠赠品标记
+  lockedPrice?: number   // 价格锁定时的优惠价（分）
+  promotionType?: string // 'price_lock' | 'amount_off' | 'percent_off' | 'buy_gift'
 }
 
 export interface HeldOrder {

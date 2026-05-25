@@ -23,13 +23,16 @@ function mockCartItem(id: number, price: number, qty: number): CartItem {
   }
 }
 
-function mountPayDialog(props: { total: number; cartItems: CartItem[]; discountAmount?: number }) {
+function mountPayDialog(props: { total: number; cartItems: CartItem[]; discountAmount?: number; member?: any; pointsToRedeem?: number; matchedPromotion?: any }) {
   return mount(PayDialog, {
     props: {
       modelValue: true,
       total: props.total,
       cartItems: props.cartItems,
       discountAmount: props.discountAmount ?? 0,
+      member: props.member ?? null,
+      pointsToRedeem: props.pointsToRedeem ?? 0,
+      matchedPromotion: props.matchedPromotion ?? null,
     },
     global: {
       plugins: [createPinia(), ElementPlus],

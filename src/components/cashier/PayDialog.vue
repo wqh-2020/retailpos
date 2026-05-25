@@ -5,11 +5,42 @@
     width="520px"
     destroy-on-close
     @update:model-value="$emit('update:modelValue', $event)"
+    @open="onDialogOpen"
+    @close="onDialogClose"
   >
     <!-- 应收金额 -->
     <div class="pay-total">
       <span class="pay-total-label">应收金额</span>
       <span class="pay-total-amount">{{ formatMoney(total) }}</span>
+    </div>
+
+    <!-- 会员信息 -->
+    <div v-if="member" class="member-section">
+      <div class="member-badge">
+        <el-icon style="color: #e6a23c"><UserFilled /></el-icon>
+        <span class="member-name">{{ member.name }}</span>
+        <el-tag size="small" :type="memberLevelType">{{ memberLevelLabel }}</el-tag>
+      </div>
+    </div>
+
+    <!-- 优惠信息 -->
+    <div v-if="matchedPromotion || pointsToRedeem > 0 || manualDiscountAmount > 0" class="discount-section">
+      <div v-if="matchedPromotion" class="discount-item">
+        <span class="discount-label">
+          <el-tag size="small" type="danger">{{ matchedPromotion.name }}</el-tag>
+        </span>
+        <span class="discount-value">-{{ formatMoney(promotionDiscountAmount) }}</span>
+      </div>
+      <div v-if="pointsToRedeem > 0" class="discount-item">
+        <span class="discount-label">积分抵扣（{{ pointsToRedeem }}积分）</span>
+        <span class="discount-value">-{{ formatMoney(pointsDeductFen) }}</span>
+      </div>
+      <div v-if="manualDiscountAmount > 0" class="discount-item">
+        <span class="discount-label">
+          <el-tag size="small" type="warning">手动减免</el-tag>
+        </span>
+        <span class="discount-value">-{{ formatMoney(manualDiscountAmount) }}</span>
+      </div>
     </div>
 
     <!-- 支付方式选择 -->
@@ -86,17 +117,26 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import type { CartItem, PaymentMethodCode, Order, OrderItem, Payment } from '@/types'
+import type { CartItem, PaymentMethodCode, Order, OrderItem, Payment, Member, Promotion } from '@/types'
 import { useSettingsStore } from '@/stores/settings'
 import { createOrder } from '@/db/orders'
+import { redeemPoints, earnPoints, calcEarnPoints } from '@/db/members'
+import { getLevelLabel } from '@/db/members'
 import { formatMoney, yuanToFen } from '@/utils/money'
 import { generateOrderNo } from '@/utils/orderNo'
+
+const POINTS_RATE = 10  // 1积分 = 10分
 
 const props = defineProps<{
   modelValue: boolean
   total: number        // 分
   cartItems: CartItem[]
   discountAmount: number
+  member: Member | null
+  pointsToRedeem: number
+  matchedPromotion: Promotion | null
+  actualAmount?: number  // 实收金额（元），可选
+  manualDiscount?: number  // 手动减免金额（分），可选
 }>()
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void
@@ -112,6 +152,33 @@ const enabledMethods = computed(() => settings.enabledPaymentMethods)
 const activePayMethods = computed(() =>
   enabledMethods.value.filter((m) => selectedMethods.value.includes(m.code))
 )
+
+// 积分抵扣金额（分）
+const pointsDeductFen = computed(() => props.pointsToRedeem * POINTS_RATE)
+
+// 手动减免金额（分）
+const manualDiscountAmount = computed(() => props.manualDiscount || 0)
+
+// 促销优惠金额（分）
+const promotionDiscountAmount = computed(() => {
+  const p = props.matchedPromotion
+  if (!p) return 0
+  if (p.type === 'amount_off' && p.discountAmount) return p.discountAmount
+  return 0
+})
+
+// 会员等级标签
+const memberLevelLabel = computed(() => {
+  if (!props.member) return ''
+  return getLevelLabel(props.member.level)
+})
+const memberLevelType = computed(() => {
+  if (!props.member) return 'info'
+  const levelMap: Record<string, string> = {
+    bronze: 'info', silver: '', gold: 'warning', platinum: 'danger',
+  }
+  return levelMap[props.member.level] || 'info'
+})
 
 const quickAmounts = computed(() => {
   const t = props.total / 100
@@ -150,19 +217,54 @@ function onAmountChange() {
 // 重置
 watch(() => props.modelValue, (v) => {
   if (v) {
-    selectedMethods.value = ['wechat']
-    Object.keys(payAmounts.value).forEach((k) => (payAmounts.value[k] = 0))
-    // 默认微信填满
-    payAmounts.value.wechat = Math.ceil(props.total / 100)
+    // 如果传入了实收金额，自动选择现金并填充
+    if (props.actualAmount && props.actualAmount > 0) {
+      selectedMethods.value = ['cash']
+      Object.keys(payAmounts.value).forEach((k) => (payAmounts.value[k] = 0))
+      payAmounts.value.cash = props.actualAmount
+    } else {
+      selectedMethods.value = ['wechat']
+      Object.keys(payAmounts.value).forEach((k) => (payAmounts.value[k] = 0))
+      payAmounts.value.wechat = Math.ceil(props.total / 100)
+    }
   }
 })
+
+function onDialogOpen() {
+  document.addEventListener('keydown', onEnterKey)
+}
+
+function onDialogClose() {
+  document.removeEventListener('keydown', onEnterKey)
+}
+
+function onEnterKey(e: KeyboardEvent) {
+  if (e.key === 'Enter' && !paying.value && diff.value <= 0 && paidFen.value > 0) {
+    confirmPay()
+  }
+}
 
 async function confirmPay() {
   if (diff.value > 0) { ElMessage.warning('收款金额不足'); return }
   paying.value = true
   try {
     const now = Date.now()
-    const subtotal = props.cartItems.reduce((s, it) => s + it.product.price * it.quantity, 0)
+
+    // 1. 积分抵扣（先扣积分）
+    if (props.member && props.pointsToRedeem > 0) {
+      try {
+        await redeemPoints(props.member.id!, props.pointsToRedeem, '收银积分抵扣')
+      } catch (e: any) {
+        ElMessage.error('积分抵扣失败：' + (e.message || '未知错误'))
+        return
+      }
+    }
+
+    // 2. 构造订单数据
+    const subtotal = props.cartItems.reduce((s, it) => {
+      if (it.isGift) return s
+      return s + it.product.price * it.quantity
+    }, 0)
 
     const orderData: Omit<Order, 'id'> = {
       orderNo: generateOrderNo(),
@@ -174,15 +276,30 @@ async function confirmPay() {
       updatedAt: now,
     }
 
-    const itemsData: Omit<OrderItem, 'id' | 'orderId'>[] = props.cartItems.map((it) => ({
-      productId: it.product.id!,
-      productName: it.product.name,
-      barcode: it.product.barcode,
-      price: it.product.price,
-      quantity: it.quantity,
-      discountRate: it.discountRate,
-      subtotal: it.subtotal,
-    }))
+    // 会员信息
+    if (props.member) {
+      orderData.memberId = props.member.id
+      orderData.memberPhone = props.member.phone
+      orderData.memberLevel = props.member.level
+      orderData.pointsRedeemed = props.pointsToRedeem
+    }
+    // 促销信息
+    if (props.matchedPromotion) {
+      orderData.promotionId = props.matchedPromotion.id
+      orderData.promotionName = props.matchedPromotion.name
+    }
+
+    const itemsData: Omit<OrderItem, 'id' | 'orderId'>[] = props.cartItems
+      .filter((it) => !it.isGift)  // 赠品不写入订单明细
+      .map((it) => ({
+        productId: it.product.id!,
+        productName: it.product.name,
+        barcode: it.product.barcode,
+        price: it.product.price,
+        quantity: it.quantity,
+        discountRate: it.discountRate,
+        subtotal: it.subtotal,
+      }))
 
     const paymentsData: Omit<Payment, 'id' | 'orderId'>[] = activePayMethods.value.map((m) => {
       const amtFen = yuanToFen(payAmounts.value[m.code] || 0)
@@ -196,12 +313,38 @@ async function confirmPay() {
 
     const orderId = await createOrder(orderData, itemsData, paymentsData)
 
+    // 3. 消费返积分（订单创建成功后）
+    if (props.member) {
+      try {
+        const earnedPts = calcEarnPoints(props.total)
+        if (earnedPts > 0) {
+          await earnPoints(
+            props.member.id!,
+            orderId,
+            orderData.orderNo,
+            earnedPts,
+            '消费返积分'
+          )
+        }
+        orderData.pointsEarned = earnedPts
+      } catch (e: any) {
+        // 返积分失败不影响订单
+        console.error('返积分失败:', e)
+      }
+    }
+
     const fullOrder: Order = { ...orderData, id: orderId }
     const fullItems: OrderItem[] = itemsData.map((it, i) => ({ ...it, id: i, orderId }))
     const fullPayments: Payment[] = paymentsData.map((p, i) => ({ ...p, id: i, orderId }))
 
     emit('paid', { order: fullOrder, items: fullItems, payments: fullPayments })
-    ElMessage.success('收款成功！')
+
+    // 提示返积分
+    if (props.member && orderData.pointsEarned && orderData.pointsEarned > 0) {
+      ElMessage.success(`收款成功！返积分 +${orderData.pointsEarned}`)
+    } else {
+      ElMessage.success('收款成功！')
+    }
   } catch (e: any) {
     ElMessage.error(e.message || '收款失败')
   } finally {
@@ -220,6 +363,37 @@ async function confirmPay() {
 }
 .pay-total-label { font-size: 13px; color: #909399; display: block; margin-bottom: 4px; }
 .pay-total-amount { font-size: 32px; font-weight: 500; color: #e6a23c; }
+
+/* 会员区域 */
+.member-section {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #fdf6ec;
+  border-radius: 6px;
+  border: 1px solid #faecd8;
+}
+.member-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.member-name { font-weight: 500; color: #303133; }
+
+/* 优惠区域 */
+.discount-section {
+  margin-bottom: 12px;
+}
+.discount-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 13px;
+}
+.discount-label { color: #606266; }
+.discount-value { color: #f56c6c; font-weight: 500; }
+
 .pay-methods {
   display: flex;
   gap: 8px;

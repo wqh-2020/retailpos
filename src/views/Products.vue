@@ -211,6 +211,9 @@ import {
   generateBarcode, addCategory, updateCategory, deleteCategory,
   bulkAddProducts,
 } from '@/db/products'
+import { getCurrentInstance } from 'vue'
+
+const instance = getCurrentInstance()
 import { formatMoney } from '@/utils/money'
 import { yuanToFen } from '@/utils/money'
 import { exportToExcel, parseExcel } from '@/utils/excel'
@@ -292,7 +295,8 @@ async function genBarcode() {
 }
 
 async function saveProduct() {
-  await formRef.value?.validate()
+  const formComp = formRef.value ?? instance?.refs?.formRef as any
+  await formComp?.validate()
   saving.value = true
   try {
     const data = {
